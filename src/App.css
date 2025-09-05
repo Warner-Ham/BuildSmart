@@ -1,15 +1,87 @@
 /* App.css */
-.App {
-  text-align: center;
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #f4f7fa;
 }
 
-.App-header {
-  background-color: #282c34;
+.App {
   min-height: 100vh;
+  background: linear-gradient(135deg, #e8f5e9 0%, #f4f7fa 100%);
+}
+
+.navbar {
+  background: linear-gradient(90deg, #205c20 60%, #4caf50 100%);
+  color: #fff;
+  padding: 1rem 2rem;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  box-shadow: 0 2px 8px rgba(32,92,32,0.08);
+}
+.navbar-logo {
+  height: 48px;
+  margin-right: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(32,92,32,0.12);
+}
+.navbar-title {
+  font-size: 2rem;
+  font-weight: bold;
+  letter-spacing: 1px;
+  margin-right: 2rem;
+}
+.nav-links {
+  margin-left: auto;
+  display: flex;
+  gap: 1.5rem;
+}
+.nav-links a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 1.1rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  transition: background 0.2s, color 0.2s;
+}
+.nav-links a:hover {
+  background: #a8e063;
+  color: #205c20;
+}
+
+.container {
+  padding: 3rem 1rem 2rem 1rem;
+  max-width: 700px;
+  margin: 2rem auto 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(32,92,32,0.08);
+  text-align: center;
+}
+.container h1 {
+  color: #205c20;
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+.container p {
+  color: #333;
+  font-size: 1.2rem;
+  margin-bottom: 0;
+}
+@media (max-width: 600px) {
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 1rem;
+  }
+  .navbar-title {
+    margin-bottom: 0.5rem;
+  }
+  .nav-links {
+    margin-left: 0;
+    gap: 1rem;
+  }
+  .container {
+    padding: 1.5rem 0.5rem;
+  }
 }
