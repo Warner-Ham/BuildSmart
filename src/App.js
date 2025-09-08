@@ -1,8 +1,4 @@
-
-
-
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import './App.css';
 import staffData from './staff_db.json';
@@ -83,6 +79,10 @@ function AnimatedPage({ children }) {
 
 
 function Home() {
+  const [projects, setProjects] = useState([]);
+  useEffect(() => {
+    import('./projects_db.json').then(data => setProjects(data.default));
+  }, []);
   return (
     <AnimatedPage>
       <section className="hero">
@@ -92,7 +92,31 @@ function Home() {
           <p className="subtitle">Your smart solution for building management and innovation.</p>
           <Link to="/page1" className="cta-btn">Get Started</Link>
         </div>
-  {/* Removed hero-bg to prevent background logo duplication */}
+      </section>
+  <section className="projects-section full-width-section">
+        <h2 className="projects-title">Featured Construction Projects</h2>
+        <div className="projects-carousel-wrapper">
+          {projects.length === 0 ? (
+            <div className="projects-loading">Loading projects...</div>
+          ) : (
+            <div className="projects-carousel">
+              {[...projects, ...projects].map((proj, idx) => (
+                <div key={idx} className="project-card-carousel">
+                  <img
+                    src={proj.image}
+                    alt={proj.name}
+                    className="project-img"
+                  />
+                  <div className="project-info">
+                    <strong>{proj.name}</strong><br/>
+                    <span>Status: {proj.status}</span><br/>
+                    <span>Location: {proj.location}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
     </AnimatedPage>
   );
@@ -130,14 +154,29 @@ function App() {
   };
 
   return (
-    <div className="App">
+    <div className="App" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar onLoginClick={() => setLoginOpen(true)} loggedInUser={loggedInUser} />
-      <LoginPopup open={loginOpen} onClose={() => setLoginOpen(false)} onLogin={handleLogin} />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/page1" element={<Page1 />} />
-        <Route path="/page2" element={<Page2 />} />
-      </Routes>
+      <div style={{ flex: 1 }}>
+        <LoginPopup open={loginOpen} onClose={() => setLoginOpen(false)} onLogin={handleLogin} />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/page1" element={<Page1 />} />
+          <Route path="/page2" element={<Page2 />} />
+        </Routes>
+      </div>
+      <footer className="footer-address">
+        <a
+          href="https://www.google.com/maps/search/?api=1&query=Construction+Property+Solution+Pvt+Ltd+371%2F14B+Samagi+Mawatha+Himbutana+Rd+Mulleriyawa"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <div>
+            Construction Property Solution Pvt Ltd<br />
+            371/14B, Samagi Mawatha,<br />
+            Himbutana Rd, Mulleriyawa.
+          </div>
+        </a>
+      </footer>
     </div>
   );
 }
