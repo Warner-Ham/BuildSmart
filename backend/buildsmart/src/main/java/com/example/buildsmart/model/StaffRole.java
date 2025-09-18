@@ -22,4 +22,9 @@ public class StaffRole {
     public String getDescription(){
         return description;
     }
+
+    @Override
+    public String toString(){
+        return displayName;
+    }
 }
