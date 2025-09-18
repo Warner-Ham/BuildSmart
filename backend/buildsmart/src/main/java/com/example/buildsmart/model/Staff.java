@@ -112,5 +112,4 @@ public class Staff {
     public void setCreatedBy(String createdBy) {
         this.createdBy = createdBy;
     }
-
 }
