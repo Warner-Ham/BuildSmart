@@ -3,7 +3,7 @@ package com.example.buildsmart.repositories;
 import java.util.List;
 import java.util.Optional;
 
-/*
+/**
  * Generic repository interface defining basic CRUD operations
  * @param <T> Entity type
  * @param <ID> Primary key type
@@ -14,7 +14,7 @@ public interface BaseRepository <T, ID> {
      * @param entity Entity to save
      * @return Saved entity
      */
-    T save(T entity);
+    T save(T entity) throws IllegalAccessException;
 
     /**
      * Find entity by ID
