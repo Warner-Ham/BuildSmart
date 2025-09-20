@@ -1,6 +1,7 @@
 package com.example.buildsmart.model;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 public class Staff {
     private String staffId;
@@ -17,7 +18,7 @@ public class Staff {
     //Default constructor
     public Staff() {
         this.staffId = generateUniqueId();
-        this.createAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now();
         this.status = StaffStatus.ACTIVE;
     }
 
@@ -111,5 +112,45 @@ public class Staff {
 
     public void setCreatedBy(String createdBy) {
         this.createdBy = createdBy;
+    }
+
+    //Business methods
+    public String getFullName(){
+        return firstName + " " + lastName;
+    }
+
+    public boolean isActive(){
+        return status == StaffStatus.ACTIVE;
+    }
+
+    public String generateUniqueId(){
+        return "STAFF" + System.currentTimeMillis();
+    }
+
+    @Override
+    public boolean equals(Object obj){
+        if(this == obj)
+            return true;
+        if(obj == null || getClass() != obj.getClass())
+            return false;
+        Staff staff = (Staff) obj;
+        return Objects.equals(staffId, staff.staffId);
+    }
+
+    @Override
+    public int hashCode(){
+        return Objects.hash(staffId);
+    }
+
+    @Override
+    public String toString(){
+        return "Staff{" +
+                "staffId='" + staffId + '\'' +
+                ", fullName='" + getFullName() + '\'' +
+                ", email='" + email + '\'' +
+                ", role=" + role +
+                ", status=" + status +
+                ", createdAt=" + createdAt +
+                '}';
     }
 }
