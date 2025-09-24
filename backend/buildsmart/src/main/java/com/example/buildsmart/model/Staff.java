@@ -1,19 +1,38 @@
 package com.example.buildsmart.model;
 
+import jakarta.persistence.*;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+
 import java.time.LocalDateTime;
 import java.util.Objects;
 
+@Entity
+@Table(name = "staff")
 public class Staff {
+    @Id
     private String staffId;
+
+    @Column(nullable = false)
     private String firstName;
+
+    @Column(nullable = false)
     private String lastName;
+
+    @Column(unique =true, nullable = false)
     private String email;
-    private String phoneNumber;
+
+    private String  phoneNumber;
+
+    @Enumerated(EnumType.STRING)
     private StaffRole role;
+
+    @Enumerated(EnumType.STRING)
     private StaffStatus status;
+
     private LocalDateTime createdAt;
     private LocalDateTime lastLogin;
     private String createdBy;
+
 
     //Default constructor
     public Staff() {
