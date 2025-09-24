@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import './App.css';
-import staffData from './staff_db.json';
+// import staffData from './staff_db.json';
 const logo = process.env.PUBLIC_URL + '/logo.jpg';
 
 
@@ -38,16 +38,22 @@ function LoginPopup({ open, onClose, onLogin }) {
 
   if (!open) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const found = staffData.find(
-      (staff) => staff.id === id && staff.username === username && staff.password === password
-    );
-    if (found) {
-      onLogin(username);
-      setId(''); setUsername(''); setPassword(''); setError('');
-    } else {
-      setError('Invalid credentials.');
+    try {
+  const res = await fetch('http://localhost:8081/api/staff');
+      const staffData = await res.json();
+      const found = staffData.find(
+        (staff) => staff.id === id && staff.username === username && staff.password === password
+      );
+      if (found) {
+        onLogin(username);
+        setId(''); setUsername(''); setPassword(''); setError('');
+      } else {
+        setError('Invalid credentials.');
+      }
+    } catch {
+      setError('Unable to connect to staff API.');
     }
   };
 
@@ -81,8 +87,22 @@ function AnimatedPage({ children }) {
 function Home() {
   const [projects, setProjects] = useState([]);
   useEffect(() => {
-    import('./projects_db.json').then(data => setProjects(data.default));
+  fetch('http://localhost:8081/api/projects')
+      .then(res => res.json())
+      .then(data => setProjects(data))
+      .catch(() => setProjects([]));
   }, []);
+
+  // Helper to get correct image path for public folder
+  const getImageSrc = (imgPath) => {
+    // Remove ../project_images/ and get subfolder + filename
+    const parts = imgPath.replace(/\\/g, '/').split('/');
+    // e.g. [.., project_images, subfolder, filename]
+    const subfolder = parts[2];
+    const filename = parts[3];
+    return process.env.PUBLIC_URL + `/project_images/${subfolder}/${filename}`;
+  };
+
   return (
     <AnimatedPage>
       <section className="hero">
@@ -93,28 +113,36 @@ function Home() {
           <Link to="/page1" className="cta-btn">Get Started</Link>
         </div>
       </section>
-  <section className="projects-section full-width-section">
+      <section className="projects-section full-width-section">
         <h2 className="projects-title">Featured Construction Projects</h2>
-        <div className="projects-carousel-wrapper">
+        <div className="projects-grouped">
           {projects.length === 0 ? (
             <div className="projects-loading">Loading projects...</div>
           ) : (
-            <div className="projects-carousel">
-              {[...projects, ...projects].map((proj, idx) => (
-                <div key={idx} className="project-card-carousel">
-                  <img
-                    src={proj.image}
-                    alt={proj.name}
-                    className="project-img"
-                  />
-                  <div className="project-info">
-                    <strong>{proj.name}</strong><br/>
-                    <span>Status: {proj.status}</span><br/>
-                    <span>Location: {proj.location}</span>
-                  </div>
+            projects.map((proj, idx) => (
+              <div key={idx} className="project-container">
+                <h3 className="project-name">{proj.name}</h3>
+                <div className="project-meta">
+                  <span><strong>Client:</strong> {proj.client}</span> | <span><strong>Location:</strong> {proj.location}</span> | <span><strong>Status:</strong> {proj.status}</span>
                 </div>
-              ))}
-            </div>
+                <div className="project-images-row">
+                  {proj.images && proj.images.length > 0 ? (
+                    proj.images.split(';').map((img, i) => (
+                      <img
+                        key={i}
+                        src={getImageSrc(img)}
+                        alt={proj.name + ' image ' + (i+1)}
+                        className="project-img"
+                        style={{maxWidth: '200px', margin: '8px', borderRadius: '8px', boxShadow: '0 2px 8px #ccc'}}
+                        onError={e => {e.target.onerror=null; e.target.src=process.env.PUBLIC_URL + '/logo.jpg';}}
+                      />
+                    ))
+                  ) : (
+                    <span className="no-images">No images available.</span>
+                  )}
+                </div>
+              </div>
+            ))
           )}
         </div>
       </section>

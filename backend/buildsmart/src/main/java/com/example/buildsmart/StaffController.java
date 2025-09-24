@@ -7,18 +7,18 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.buildsmart.model.Project;
-import com.example.buildsmart.repository.ProjectRepository;
+import com.example.buildsmart.model.Staff;
+import com.example.buildsmart.repository.StaffRepository;
 
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")
-public class ConstructionController {
+public class StaffController {
 
     @Autowired
-    private ProjectRepository projectRepository;
+    private StaffRepository staffRepository;
 
-    @GetMapping("/api/projects")
-    public List<Project> getProjects() {
-        return projectRepository.findAll();
+    @GetMapping("/api/staff")
+    public List<Staff> getStaff() {
+        return staffRepository.findAll();
     }
 }
