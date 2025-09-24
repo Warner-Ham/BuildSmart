@@ -1,48 +1,40 @@
 package com.example.buildsmart.model;
 
-import jakarta.persistence.*;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
-
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
-@Entity
-@Table(name = "staff")
+/**
+ * Staff Entity Model
+ * Represents a staff member in the construction management system
+ */
 public class Staff {
-    @Id
     private String staffId;
-
-    @Column(nullable = false)
     private String firstName;
-
-    @Column(nullable = false)
     private String lastName;
-
-    @Column(unique =true, nullable = false)
     private String email;
-
-    private String  phoneNumber;
-
-    @Enumerated(EnumType.STRING)
+    private String phoneNumber;
     private StaffRole role;
-
-    @Enumerated(EnumType.STRING)
     private StaffStatus status;
 
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     private LocalDateTime createdAt;
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     private LocalDateTime lastLogin;
+
     private String createdBy;
 
-
-    //Default constructor
+    // Default constructor
     public Staff() {
         this.staffId = generateUniqueId();
         this.createdAt = LocalDateTime.now();
         this.status = StaffStatus.ACTIVE;
     }
 
-    //Parameterized constructor
-    public Staff(String firstName, String lastName, String email, String phoneNumber, StaffRole role, String createdBy){
+    // Parameterized constructor
+    public Staff(String firstName, String lastName, String email,
+                 String phoneNumber, StaffRole role, String createdBy) {
         this();
         this.firstName = firstName;
         this.lastName = lastName;
@@ -52,117 +44,66 @@ public class Staff {
         this.createdBy = createdBy;
     }
 
-    //Getters and Setters
-    public String getStaffId(){
-        return staffId;
-    }
-
-    public void setStaffId(String staffId){
-        this.staffId = staffId;
-    }
-
-    public String getFirstName(){
-        return firstName;
-    }
-
-    public void setFirstName(String firstName){
-        this.firstName = firstName;
-    }
-
-    public String getLastName(){
-        return lastName;
-    }
-
-    public void setLastName(String lastName){
-        this.lastName = lastName;
-    }
-
-    public String getEmail(){
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPhoneNumber(){
-        return phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber){
-        this.phoneNumber = phoneNumber;
-    }
-
-    public StaffRole getRole(){
-        return role;
-    }
-
-    public void setRole(StaffRole role){
-        this.role = role;
-    }
-
-    public StaffStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(StaffStatus status){
-        this.status = status;
-    }
-
-    public LocalDateTime getCreatedAt(){
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getLastLogin() {
-        return lastLogin;
-    }
-
-    public void setLastLogin(LocalDateTime lastLogin) {
-        this.lastLogin = lastLogin;
-    }
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    //Business methods
-    public String getFullName(){
+    // Business methods
+    public String getFullName() {
         return firstName + " " + lastName;
     }
 
-    public boolean isActive(){
+    public boolean isActive() {
         return status == StaffStatus.ACTIVE;
     }
 
-    public String generateUniqueId(){
+    private String generateUniqueId() {
         return "STAFF" + System.currentTimeMillis();
     }
 
+    // Getters and Setters
+    public String getStaffId() { return staffId; }
+    public void setStaffId(String staffId) { this.staffId = staffId; }
+
+    public String getFirstName() { return firstName; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
+
+    public String getLastName() { return lastName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+
+    public StaffRole getRole() { return role; }
+    public void setRole(StaffRole role) { this.role = role; }
+
+    public StaffStatus getStatus() { return status; }
+    public void setStatus(StaffStatus status) { this.status = status; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getLastLogin() { return lastLogin; }
+    public void setLastLogin(LocalDateTime lastLogin) { this.lastLogin = lastLogin; }
+
+    public String getCreatedBy() { return createdBy; }
+    public void setCreatedBy(String createdBy) { this.createdBy = createdBy; }
+
+    // Override methods
     @Override
-    public boolean equals(Object obj){
-        if(this == obj)
-            return true;
-        if(obj == null || getClass() != obj.getClass())
-            return false;
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
         Staff staff = (Staff) obj;
         return Objects.equals(staffId, staff.staffId);
     }
 
     @Override
-    public int hashCode(){
+    public int hashCode() {
         return Objects.hash(staffId);
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return "Staff{" +
                 "staffId='" + staffId + '\'' +
                 ", fullName='" + getFullName() + '\'' +
