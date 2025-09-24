@@ -3,25 +3,28 @@ package com.example.buildsmart.repositories;
 import com.example.buildsmart.model.Staff;
 import com.example.buildsmart.model.StaffRole;
 import com.example.buildsmart.model.StaffStatus;
+import org.springframework.stereotype.Repository;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
 /**
  * In-memory implementation of Staff repository
  * This will be replaced with database implementation in production
  */
+@Repository
 public class StaffRepository implements BaseRepository<Staff, String> {
     private final Map<String, Staff> staffDatabase;
 
     public StaffRepository(){
+
         this.staffDatabase = new HashMap<>();
+        System.out.println("StaffRepository initialized with in-memory storage");
     }
 
     @Override
-    public Staff save(Staff staff) throws IllegalAccessException {
-        if (staff == null){
-            throw new IllegalAccessException("Staff cannot be null");
+    public Staff save(Staff staff) {
+        if (staff == null) {
+            throw new IllegalArgumentException("Staff cannot be null");
         }
         staffDatabase.put(staff.getStaffId(), staff);
         System.out.println("Staff saved: " + staff.getStaffId());
@@ -38,6 +41,7 @@ public class StaffRepository implements BaseRepository<Staff, String> {
 
     @Override
     public List<Staff> findAll() {
+
         return new ArrayList<>(staffDatabase.values());
     }
 
@@ -56,11 +60,13 @@ public class StaffRepository implements BaseRepository<Staff, String> {
 
     @Override
     public boolean exists(String id) {
+
         return id != null && staffDatabase.containsKey(id);
     }
 
     @Override
     public long count() {
+
         return staffDatabase.size();
     }
 
@@ -109,5 +115,22 @@ public class StaffRepository implements BaseRepository<Staff, String> {
     public void clear(){
         staffDatabase.clear();
         System.out.println("All staff data cleared");
+    }
+
+    //Get repository statistics
+    public Map<String, Object> getRepositoryStats(){
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("totalRecords", count());
+        stats.put("roleDistribution", Arrays.stream(StaffRole.values())
+                .collect(Collectors.toMap(
+                        role -> role.name(),
+                        role -> findByRole(role).size()
+                )));
+        stats.put("statusDistribution", Arrays.stream(StaffStatus.values())
+                .collect(Collectors.toMap(
+                        status -> status.name(),
+                        status -> findByStatus(status).size()
+                )));
+        return stats;
     }
 }
