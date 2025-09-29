@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import MonthlyReportsApp from './components/MonthlyReports/MonthlyReportsApp';
 import './App.css';
 // import staffData from './staff_db.json';
 const logo = process.env.PUBLIC_URL + '/logo.jpg';
@@ -21,6 +22,7 @@ function Navbar({ onLoginClick, loggedInUser }) {
         <Link to="/" onClick={() => setNavOpen(false)}>Home</Link>
         <Link to="/page1" onClick={() => setNavOpen(false)}>Page 1</Link>
         <Link to="/page2" onClick={() => setNavOpen(false)}>Page 2</Link>
+        <Link to="/monthly-reports" onClick={() => setNavOpen(false)}>Monthly Reports</Link>
         {loggedInUser ? (
           <span className="welcome-user">Welcome {loggedInUser}</span>
         ) : (
@@ -190,6 +192,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/page1" element={<Page1 />} />
           <Route path="/page2" element={<Page2 />} />
+          <Route path="/monthly-reports" element={<MonthlyReportsApp />} />
         </Routes>
       </div>
       <footer className="footer-address">
