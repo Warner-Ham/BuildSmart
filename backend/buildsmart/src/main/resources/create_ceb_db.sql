@@ -31,9 +31,8 @@ INSERT INTO Staff (id, username, password) VALUES
 ('CBEAD', 'JSaliya', 'MU113R1YAWA1996');
 
 -- Projects data
-INSERT INTO Projects (id, name, client, location, status, images) VALUES
-(0, 'Holiday Bungalow', 'DCSL', 'Batticaloa Plant', 'Completed',
-  '../project_images/Holiday_Bungalow/holiday_bungalow_DCSL_batticalo_plant.png;../project_images/Holiday_Bungalow/holiday_bungalow_DCSL_batticalo_plant (2).png'),
-(1, 'Warehouse', 'DCSL', 'Batticaloa Plant', 'Completed',
-  '../project_images/Warehouse/warehouse_DCSL_batticalo_plant.png;../project_images/Warehouse/warehouse_DCSL_batticalo_plant (2).png;../project_images/Warehouse/warehouse_DCSL_batticalo_plant (3).png;../project_images/Warehouse/warehouse_DCSL_batticalo_plant (4).png'),
-(2, 'Sub Grid', 'CEB', 'Grid Station, Habarana', 'Completed', '');
+INSERT INTO Projects (name, client, location, status, images) VALUES
+('Holiday Bungalow', 'DCSL', 'Batticaloa Plant', 'Completed',  '../project_images/Holiday_Bungalow/holiday_bungalow_DCSL_batticalo_plant.png;../project_images/Holiday_Bungalow/holiday_bungalow_DCSL_batticalo_plant (2).png'),
+('Warehouse', 'DCSL', 'Batticaloa Plant', 'Completed',  '../project_images/Warehouse/warehouse_DCSL_batticalo_plant.png;../project_images/Warehouse/warehouse_DCSL_batticalo_plant (2).png;../project_images/Warehouse/warehouse_DCSL_batticalo_plant (3).png'),
+('Distillery', 'DCSL', 'Batticaloa Plant', 'Completed', '../project_images/DSCL_Distillery/distillery_DSCL_batticalo_plant.png;../project_images/DSCL_Distillery/distillery_DSCL_batticalo_plant (2).png'),
+('Sub Grid', 'CEB', 'Grid Station, Habarana', 'Completed', '');

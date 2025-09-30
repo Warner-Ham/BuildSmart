@@ -41,7 +41,7 @@ function LoginPopup({ open, onClose, onLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-  const res = await fetch('http://localhost:8081/api/staff');
+  const res = await fetch('http://localhost:8080/api/staff');
       const staffData = await res.json();
       const found = staffData.find(
         (staff) => staff.id === id && staff.username === username && staff.password === password
@@ -87,7 +87,7 @@ function AnimatedPage({ children }) {
 function Home() {
   const [projects, setProjects] = useState([]);
   useEffect(() => {
-  fetch('http://localhost:8081/api/projects')
+  fetch('http://localhost:8080/api/projects')
       .then(res => res.json())
       .then(data => setProjects(data))
       .catch(() => setProjects([]));
@@ -97,9 +97,11 @@ function Home() {
   const getImageSrc = (imgPath) => {
     // Remove ../project_images/ and get subfolder + filename
     const parts = imgPath.replace(/\\/g, '/').split('/');
-    // e.g. [.., project_images, subfolder, filename]
-    const subfolder = parts[2];
+    // Fix for DCSL_Distillery folder typo in SQL/data
+    let subfolder = parts[2];
     const filename = parts[3];
+    // If subfolder is DSCL_Distillery, correct it to DCSL_Distillery
+    if (subfolder === 'DSCL_Distillery') subfolder = 'DCSL_Distillery';
     return process.env.PUBLIC_URL + `/project_images/${subfolder}/${filename}`;
   };
 
