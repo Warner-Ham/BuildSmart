@@ -12,7 +12,7 @@ REM Check if XAMPP Control Panel is running
 tasklist /FI "IMAGENAME eq xampp-control.exe" | find /I "xampp-control.exe" > nul
 if errorlevel 1 (
     echo Starting XAMPP Control Panel...
-    start /min "XAMPP Control" "D:\xampp\xampp-control.exe"
+    start "XAMPP Control" "D:\xampp\xampp-control.exe"
     echo Waiting 4 seconds for XAMPP Control Panel to open...
     timeout /t 4 /nobreak > nul
 ) else (

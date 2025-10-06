@@ -146,7 +146,7 @@ function Home() {
   const services = [
     {
       title: "Project Management",
-      description: "End-to-end management of construction projects, from planning to completion, ensuring quality and timely delivery.",
+      description: "End-to-end management of construction projects, ensuring quality and timely delivery.",
       img: process.env.PUBLIC_URL + "/service_project_management.png",
       animation: "fadeInUp"
     },
@@ -190,7 +190,7 @@ function Home() {
     },
     {
       title: "Roofing Solutions",
-      description: "Advanced roofing systems for residential, commercial, and industrial buildings.",
+      description: "Advanced roofing systems for residential, commercial, and industrial steel buildings.",
       img: process.env.PUBLIC_URL + "/speciality_roofing_solutions.png",
       animation: "fadeInUp"
     },
@@ -201,8 +201,8 @@ function Home() {
       animation: "fadeInLeft"
     },
     {
-      title: "Boundary Wall Installations",
-      description: "Secure and aesthetic boundary wall construction for properties.",
+      title: "Boundary Installations",
+      description: "Secure and aesthetic boundary and retaining wall installations for properties.",
       img: process.env.PUBLIC_URL + "/speciality_boundary_wall.png",
       animation: "fadeInRight"
     }
@@ -248,7 +248,7 @@ function Home() {
           <div className="services-list">
             {services.map((service, idx) => (
               <div key={idx} className={`service-card animated ${service.animation}${servicesVisible ? ' card-visible' : ''}`} style={{marginBottom: '0rem', animationDelay: `${idx * 0.15}s`}}>
-                <img src={service.img} alt={service.title} className="service-img" style={{width: '100px', height: '100px', borderWidth: '0px', borderRadius: '0px'}} />
+                <img src={service.img} alt={service.title} className="service-img" style={{width: '80px', height: '80px', borderWidth: '0px', borderRadius: '0px'}} />
                 <br></br><h2 style={{margin: '0 0 0 0'}}>{service.title}</h2>
                 <p style={{fontSize: '1.15rem', color: '#205c20'}}>{service.description}</p>
               </div>
@@ -263,7 +263,7 @@ function Home() {
           <div className="services-list">
             {specialities.map((spec, idx) => (
               <div key={idx} className={`service-card animated ${spec.animation}${specialitiesVisible ? ' card-visible' : ''}`} style={{marginBottom: '0rem', animationDelay: `${idx * 0.15}s`}}>
-                <img src={spec.img} alt={spec.title} className="service-img" style={{width: '100px', height: '100px', borderWidth: '0px', borderRadius: '0px'}} />
+                <img src={spec.img} alt={spec.title} className="service-img" style={{width: '80px', height: '80px', borderWidth: '0px', borderRadius: '0px'}} />
                 <br></br><h2 style={{margin: '0 0 0 0'}}>{spec.title}</h2>
                 <p style={{fontSize: '1.15rem', color: '#205c20'}}>{spec.description}</p>
               </div>
@@ -384,7 +384,30 @@ function App() {
   const location = useLocation();
 
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Smooth scroll to top with 0.75s duration
+    const scrollToTop = () => {
+      const start = window.pageYOffset;
+      const duration = 750; // 0.75s
+      const startTime = performance.now();
+      
+      const animateScroll = (currentTime) => {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeInOutCubic = progress < 0.5 
+          ? 4 * progress ** 3 
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+        
+        window.scrollTo(0, start * (1 - easeInOutCubic));
+        
+        if (progress < 1) {
+          requestAnimationFrame(animateScroll);
+        }
+      };
+      
+      requestAnimationFrame(animateScroll);
+    };
+    
+    scrollToTop();
   }, [location.pathname]);
 
   const handleLogin = (username) => {
@@ -392,13 +415,57 @@ function App() {
     setLoginOpen(false);
   };
 
+  const [footerAnimated, setFooterAnimated] = useState(false);
+
+  useEffect(() => {
+    setFooterAnimated(false);
+    const timer = setTimeout(() => {
+      setFooterAnimated(true);
+    }, 750); // Match the page transition duration
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
+
+  function applyRandomMovements() {
+    const images = document.querySelectorAll('.project-img');
+    if (images.length === 0) {
+      console.warn('No images found for the project carousel. Ensure the selector matches the DOM structure.');
+      return;
+    }
+
+    images.forEach((image) => {
+      // Use custom properties to store offsets
+      if (!image._xOffset) image._xOffset = 0;
+      if (!image._yOffset) image._yOffset = 0;
+      if (!image._angOffset) image._angOffset = 0;
+
+      // Slowly change offsets
+      image._xOffset += (Math.random() - 0.5) * 1.5; // Small random step
+      image._yOffset += (Math.random() - 0.5) * 1.5;
+      image._angOffset += (Math.random() - 0.5) * 0.7;
+
+      // Clamp values for subtle movement
+      image._xOffset = Math.max(-4, Math.min(4, image._xOffset));
+      image._yOffset = Math.max(-4, Math.min(4, image._yOffset));
+      image._angOffset = Math.max(-1.5, Math.min(1.5, image._angOffset));
+
+      // Directly set transform (no transition)
+      image.style.transition = 'none';
+      image.style.transform = `translate(${image._xOffset}px, ${image._yOffset}px) rotate(${image._angOffset}deg)`;
+    });
+  }
+
+  useEffect(() => {
+    const interval = setInterval(applyRandomMovements, Math.random() * 200); // Apply every 2 seconds
+    return () => clearInterval(interval); // Cleanup on component unmount
+  }, []);
+
   return (
     <div className="App" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar onLoginClick={() => setLoginOpen(true)} loggedInUser={loggedInUser} />
       <div style={{ flex: 1 }}>
         <LoginPopup open={loginOpen} onClose={() => setLoginOpen(false)} onLogin={handleLogin} />
         <TransitionGroup>
-          <CSSTransition key={location.pathname} classNames="page" timeout={400}>
+          <CSSTransition key={location.pathname} classNames="page" timeout={750}>
             <div className="page-transition-wrapper">
               <Routes location={location}>
                 <Route path="/" element={<Home />} />
@@ -409,18 +476,45 @@ function App() {
           </CSSTransition>
         </TransitionGroup>
       </div>
-      <footer className="footer-address">
-        <a
-          href="https://www.google.com/maps/search/?api=1&query=Construction+Property+Solution+Pvt+Ltd+371%2F14B+Samagi+Mawatha+Himbutana+Rd+Mulleriyawa"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <div>
-            Construction Property Solution Pvt Ltd<br />
-            371/14B, Samagi Mawatha,<br />
-            Himbutana Rd, Mulleriyawa.
+      <footer className={`footer-enhanced footer-animate-${location.pathname.replace('/', '') || 'home'}${footerAnimated ? ' footer-animated' : ''}`}>
+        <div className="footer-main">
+          <div className="footer-brand">
+            <img src={logo} alt="BuildSmart Logo" className="footer-logo" />
+            <div className="footer-brand-text">
+              <strong>BuildSmart</strong><br />
+              <span>Your smart solution for building management and innovation.</span>
+            </div>
           </div>
-        </a>
+          <div className="footer-links">
+            <div className="footer-section">
+              <h4>General</h4>
+              <ul>
+                <li><Link to="/">Home</Link></li>
+                <li><Link to="/page1">Budgeting</Link></li>
+                <li><Link to="/request">Request</Link></li>
+              </ul>
+            </div>
+            <div className="footer-section">
+              <h4>Contact</h4>
+              <ul>
+                <li>
+                  <a href="mailto:info@buildsmart.lk">info@buildsmart.lk</a>
+                </li>
+                <li>
+                  <a href="https://www.google.com/maps/search/?api=1&query=Construction+Property+Solution+Pvt+Ltd+371%2F14B+Samagi+Mawatha+Himbutana+Rd+Mulleriyawa" target="_blank" rel="noopener noreferrer">
+                    371/14B, Samagi Mawatha, Himbutana Rd, Mulleriyawa
+                  </a>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div className="footer-bottom">
+          <span>© 2025 BuildSmart. All rights reserved.</span>
+          <span className="footer-policy-links">
+            <a href="#">Terms & Conditions</a> | <a href="#">Privacy Policy</a>
+          </span>
+        </div>
       </footer>
     </div>
   );

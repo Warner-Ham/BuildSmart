@@ -56,11 +56,14 @@ INSERT INTO staff (id, username, password, email, role) VALUES
 ('CBE03', 'SuperPieris', '5up3rp13r15', '2002pieris@gmail.com', 'Site Manager'),
 ('CBE06', 'xX-Kamal-Xx', '[!!3edcVFR$!^^!]', 'kamalhunterz@gmail.com', 'Site Manager'),
 ('CBE08', 'AstraAurlia', 'A@_d0nU7_@E', 'doubleAA@gmail.com', 'Document Controller Manager'),
-('CBEAD', 'JSaliya', 'MU113R1YAWA1996', 'jsaliya@gmail.com', 'Admin');
+('CBE11', 'JSaliya', 'MU113R1YAWA1996', 'jsaliya@gmail.com', 'Admin'),
+('CBE00', 'Test', 'Test', 'Test@test.com', 'Admin');
 
 -- project data
 INSERT INTO project (name, client, location, status, images, start_date, end_date, curr_budget, pre_budget) VALUES
 ('Holiday Bungalow', 'DCSL', 'Batticaloa Plant', 'Completed', '../project_images/Holiday_Bungalow/holiday_bungalow_DCSL_batticalo_plant.png;../project_images/Holiday_Bungalow/holiday_bungalow_DCSL_batticalo_plant (2).png', '2022-01-10', '2022-07-15', 12000000.00, 10500000.00),
 ('Warehouse', 'DCSL', 'Batticaloa Plant', 'Completed', '../project_images/Warehouse/warehouse_DCSL_batticalo_plant.png;../project_images/Warehouse/warehouse_DCSL_batticalo_plant (2).png;../project_images/Warehouse/warehouse_DCSL_batticalo_plant (3).png', '2021-03-02', '2021-11-18', 37500000.00, 41000000.00),
 ('Distillery', 'DCSL', 'Batticaloa Plant', 'Completed', '../project_images/DCSL_Distillery/distillery_DCSL_batticalo_plant.png;../project_images/DCSL_Distillery/distillery_DCSL_batticalo_plant (2).png', '2020-06-20', '2021-02-28', 25800000.00, 27200000.00),
-('Sub Grid', 'CEB', 'Grid Station, Habarana', 'Completed', '', '2023-02-01', '2023-08-15', 7050000.00, 6800000.00);
+('Sub Grid', 'CEB', 'Grid Station, Habarana', 'Completed', '', '2023-02-01', '2023-08-15', 7050000.00, 6800000.00),
+('Test', 'N/a', 'N/a', 'Ongoing', '', '2024-03-01', NULL, 0.00, 0.00),
+('Test 2', 'N/a', 'N/a', 'Ongoing', '', '2023-08-10', NULL, 0.00, 0.00);
