@@ -3,8 +3,12 @@ package com.example.buildsmart;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.buildsmart.model.Project;
@@ -16,8 +20,38 @@ public class ConstructionController {
     @Autowired
     private ProjectRepository projectRepository;
 
+    @Autowired
+    private com.example.buildsmart.repository.ProjectBudgetRepository projectBudgetRepository;
+    // Get sum of total_budget for a project
+    @GetMapping("/api/projects/{id}/budgets/sum")
+    public ResponseEntity<?> getProjectBudgetSum(@PathVariable Long id) {
+        Double sum = projectBudgetRepository.sumTotalBudgetByProjectId(id);
+        if (sum == null) sum = 0.0;
+        return ResponseEntity.ok(java.util.Collections.singletonMap("sum", sum));
+    }
+
     @GetMapping("/api/projects")
     public List<Project> getProjects() {
         return projectRepository.findAll();
+    }
+
+    // Update pre_budget and curr_budget for a project
+    @PutMapping("/api/projects/{id}")
+    public ResponseEntity<Project> updateProjectBudget(@PathVariable Long id, @RequestBody Project update) {
+        return projectRepository.findById(id)
+            .map(project -> {
+                if (update.getPre_budget() != null) project.setPre_budget(update.getPre_budget());
+                if (update.getCurr_budget() != null) project.setCurr_budget(update.getCurr_budget());
+                Project saved = projectRepository.save(project);
+                return ResponseEntity.ok(saved);
+            })
+            .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/api/projects/{id}")
+    public ResponseEntity<Project> getProjectById(@PathVariable Long id) {
+        return projectRepository.findById(id)
+            .map(ResponseEntity::ok)
+            .orElse(ResponseEntity.notFound().build());
     }
 }
