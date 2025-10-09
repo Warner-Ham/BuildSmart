@@ -233,11 +233,18 @@ export default function BudgetingTab({ loggedInRole }) {
     try {
       // Calculate total budget from resource usage
       const totalBudget = Object.values(actionData.usageData).reduce((sum, value) => sum + Number(value || 0), 0);
+      
+      // Add current date to the usage data
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
       const res = await fetch(`http://localhost:8080/api/projects/${selectedProject.id}/usage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...actionData.usageData, total_budget: totalBudget })
+        body: JSON.stringify({ 
+          ...actionData.usageData, 
+          total_budget: totalBudget,
+          allocated_date: today 
+        })
       });
 
       if (res.ok) {
