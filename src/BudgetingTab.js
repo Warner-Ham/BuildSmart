@@ -86,6 +86,74 @@ function ConfirmationModal({ open, onClose, onConfirm, title, message, confirmTe
   );
 }
 
+function MergeReplaceModal({ open, onClose, onMerge, onReplace, newData, existingData }) {
+  if (!open || !existingData) return null;
+
+  const fields = ['machinery', 'materials', 'labour_general', 'labour_skilled', 'subcontractors', 'other_costs'];
+
+  const mergedData = fields.reduce((acc, field) => {
+    acc[field] = (Number(existingData[field] || 0) + Number(newData[field] || 0));
+    return acc;
+  }, {});
+  const totalMerged = Object.values(mergedData).reduce((sum, val) => sum + Number(val), 0);
+
+  const replacedData = fields.reduce((acc, field) => {
+    acc[field] = (Number(newData[field] || 0));
+    return acc;
+  }, {});
+  const totalReplaced = Object.values(replacedData).reduce((sum, val) => sum + Number(val), 0);
+
+  const renderPreview = (data, total) => (
+    <div style={{ textAlign: 'left', fontSize: '0.9rem', color: COLORS.text }}>
+      {fields.map(field => (
+        <div key={field} style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+          <span>{field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:</span>
+          <strong>{data[field].toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+        </div>
+      ))}
+      <hr style={{ border: 0, borderTop: `1px solid ${COLORS.border}`, margin: '8px 0' }} />
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
+        <span>Total:</span>
+        <span>Rs. {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: '12px', padding: '2rem', maxWidth: '700px', width: '90%',
+        textAlign: 'center', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)'
+      }}>
+        <h3 style={{ margin: '0 0 1rem 0', color: COLORS.greenDark }}>Budget Entry Exists for Today</h3>
+        <p style={{ margin: '0 0 1.5rem 0', color: '#555' }}>
+          An entry for today already exists. Please choose to merge with the existing entry or replace it entirely.
+        </p>
+
+        <div style={{ display: 'flex', justifyContent: 'space-around', gap: '20px', marginBottom: '2rem' }}>
+          <div style={{ flex: 1, border: `2px solid ${COLORS.green}`, padding: '1rem', borderRadius: '8px' }}>
+            <h4 style={{ color: COLORS.green, margin: '0 0 10px 0' }}>If Merging</h4>
+            {renderPreview(mergedData, totalMerged)}
+          </div>
+          <div style={{ flex: 1, border: `2px solid ${COLORS.yellow}`, padding: '1rem', borderRadius: '8px' }}>
+            <h4 style={{ color: COLORS.yellow, margin: '0 0 10px 0' }}>If Replacing</h4>
+            {renderPreview(replacedData, totalReplaced)}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+          <button onClick={onMerge} style={{ background: COLORS.green, color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: '600', cursor: 'pointer', minWidth: '100px' }}>Merge</button>
+          <button onClick={onReplace} style={{ background: COLORS.yellow, color: '#222', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: '600', cursor: 'pointer', minWidth: '100px' }}>Replace</button>
+          <button onClick={onClose} style={{ background: COLORS.red, color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: '600', cursor: 'pointer', minWidth: '100px' }}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getBudgetStatusColor(percent) {
   if (percent >= 100) return COLORS.red;
   if (percent >= 90) return COLORS.yellow;
@@ -108,6 +176,9 @@ export default function BudgetingTab({ loggedInRole }) {
   const [budgetRecords, setBudgetRecords] = useState([]);
   const [editingRecord, setEditingRecord] = useState(null);
   const [editingValues, setEditingValues] = useState({});
+  // States for Admin's merge/replace functionality
+  const [mergeReplaceModalOpen, setMergeReplaceModalOpen] = useState(false);
+  const [existingDailyRecord, setExistingDailyRecord] = useState(null);
   
   // Confirmation dialog states
   const [confirmations, setConfirmations] = useState({
@@ -150,7 +221,7 @@ export default function BudgetingTab({ loggedInRole }) {
             .then(data => setBudgetRecords(data))
             .catch(() => setBudgetRecords([]));
         }
-      }, 100);
+      }, 250);
       return () => clearInterval(interval);
     }
   }, [selectedProject]);
@@ -220,9 +291,82 @@ export default function BudgetingTab({ loggedInRole }) {
     if (!selectedProject) return;
     const totalAmount = Object.values(dailyUsage).reduce((sum, value) => sum + Number(value || 0), 0);
     if (totalAmount === 0) return;
+
+    const today = new Date().toISOString().split('T')[0];
+    const existingRecord = budgetRecords.find(record => 
+        record.allocated_date && record.allocated_date.startsWith(today)
+    );
+
+    if (existingRecord) {
+        if (loggedInRole === 'Admin') {
+            setExistingDailyRecord(existingRecord);
+            setMergeReplaceModalOpen(true);
+            return;
+        } else {
+            setError('A budget has already been logged for today. Please contact an Admin to make changes.');
+            setTimeout(() => setError(''), 5000);
+            return;
+        }
+    }
     
     setActionData({ usageData: dailyUsage, totalAmount });
     setConfirmations(prev => ({ ...prev, logUsage: true }));
+  };
+
+  const confirmMergeUsage = async () => {
+    setMergeReplaceModalOpen(false);
+    if (!existingDailyRecord || !dailyUsage) return;
+    setLoading(true);
+    setError('');
+    try {
+      const fields = ['machinery', 'materials', 'labour_general', 'labour_skilled', 'subcontractors', 'other_costs'];
+      const mergedData = fields.reduce((acc, field) => {
+        acc[field] = Number(existingDailyRecord[field] || 0) + Number(dailyUsage[field] || 0);
+        return acc;
+      }, {});
+      const totalBudget = Object.values(mergedData).reduce((sum, val) => sum + val, 0);
+      
+      const res = await fetch(`http://localhost:8080/api/project-budgets/${existingDailyRecord.bgt_id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...mergedData, total_budget: totalBudget })
+      });
+      if (res.ok) {
+        setDailyUsage({ machinery: '', materials: '', labour_general: '', labour_skilled: '', subcontractors: '', other_costs: '' });
+        setExistingDailyRecord(null);
+      } else {
+        setError('Failed to merge budget record.');
+      }
+    } catch {
+      setError('Failed to merge budget record.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const confirmReplaceUsage = async () => {
+    setMergeReplaceModalOpen(false);
+    if (!existingDailyRecord || !dailyUsage) return;
+    setLoading(true);
+    setError('');
+    try {
+      const totalBudget = Object.values(dailyUsage).reduce((sum, val) => sum + Number(val || 0), 0);
+      const res = await fetch(`http://localhost:8080/api/project-budgets/${existingDailyRecord.bgt_id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...dailyUsage, total_budget: totalBudget })
+      });
+      if (res.ok) {
+        setDailyUsage({ machinery: '', materials: '', labour_general: '', labour_skilled: '', subcontractors: '', other_costs: '' });
+        setExistingDailyRecord(null);
+      } else {
+        setError('Failed to replace budget record.');
+      }
+    } catch {
+      setError('Failed to replace budget record.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const confirmLogUsage = async () => {
@@ -464,7 +608,7 @@ export default function BudgetingTab({ loggedInRole }) {
         </label>
       </div>
       {error && (
-        <div style={{ color: COLORS.red, marginBottom: 12, fontWeight: 500, fontSize: '1rem' }}>
+        <div style={{ color: COLORS.red, marginBottom: 12, fontWeight: 500, fontSize: '1rem', background: '#fee', padding: '10px', borderRadius: '8px', border: `1px solid ${COLORS.red}` }}>
           {error}
         </div>
       )}
@@ -1265,6 +1409,16 @@ export default function BudgetingTab({ loggedInRole }) {
         message="Are you sure you want to delete this budget record? This action cannot be undone."
         confirmText="Delete"
         cancelText="Cancel"
+      />
+
+      {/* Admin's Merge/Replace Modal */}
+      <MergeReplaceModal
+        open={mergeReplaceModalOpen}
+        onClose={() => setMergeReplaceModalOpen(false)}
+        onMerge={confirmMergeUsage}
+        onReplace={confirmReplaceUsage}
+        newData={dailyUsage}
+        existingData={existingDailyRecord}
       />
     </div>
   );
