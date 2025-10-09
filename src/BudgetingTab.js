@@ -154,6 +154,41 @@ function MergeReplaceModal({ open, onClose, onMerge, onReplace, newData, existin
   );
 }
 
+function AlertModal({ open, onClose, title, message }) {
+  if (!open) return null;
+
+  return (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1050
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: '12px', padding: '2rem', maxWidth: '400px', width: '90%',
+        textAlign: 'center', boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)', position: 'relative'
+      }}>
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute', top: '10px', right: '15px', background: 'none', border: 'none',
+            fontSize: '1.5rem', cursor: 'pointer', color: '#999'
+          }}
+        >&times;</button>
+        <h3 style={{ margin: '0 0 1rem 0', color: COLORS.greenDark }}>{title}</h3>
+        <p style={{ margin: '0 0 1.5rem 0', color: '#555', lineHeight: '1.4' }}>{message}</p>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <button
+            onClick={onClose}
+            style={{
+              background: COLORS.green, color: '#fff', border: 'none', borderRadius: '8px',
+              padding: '10px 20px', fontWeight: '600', cursor: 'pointer', minWidth: '100px'
+            }}
+          >OK</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getBudgetStatusColor(percent) {
   if (percent >= 100) return COLORS.red;
   if (percent >= 90) return COLORS.yellow;
@@ -179,7 +214,8 @@ export default function BudgetingTab({ loggedInRole }) {
   // States for Admin's merge/replace functionality
   const [mergeReplaceModalOpen, setMergeReplaceModalOpen] = useState(false);
   const [existingDailyRecord, setExistingDailyRecord] = useState(null);
-  
+  const [alertModalInfo, setAlertModalInfo] = useState({ open: false, title: '', message: '' });
+
   // Confirmation dialog states
   const [confirmations, setConfirmations] = useState({
     createBudget: false,
@@ -214,13 +250,12 @@ export default function BudgetingTab({ loggedInRole }) {
           .then(res => res.json())
           .then(data => setAccumulativeSpent(data.sum || 0))
           .catch(() => setAccumulativeSpent(0));
-        // Fetch budget records for Document Control Manager/Admin
-        if (loggedInRole === 'Document Control Manager' || loggedInRole === 'Admin') {
-          fetch(`http://localhost:8080/api/project-budgets/project/${selectedProject.id}`)
-            .then(res => res.json())
-            .then(data => setBudgetRecords(data))
-            .catch(() => setBudgetRecords([]));
-        }
+        // BUG FIX: Always fetch budget records for all roles to check for today's entry.
+        // The UI will still only display the table for authorized roles.
+        fetch(`http://localhost:8080/api/project-budgets/project/${selectedProject.id}`)
+          .then(res => res.json())
+          .then(data => setBudgetRecords(data))
+          .catch(() => setBudgetRecords([]));
       }, 250);
       return () => clearInterval(interval);
     }
@@ -303,8 +338,12 @@ export default function BudgetingTab({ loggedInRole }) {
             setMergeReplaceModalOpen(true);
             return;
         } else {
-            setError('A budget has already been logged for today. Please contact an Admin to make changes.');
-            setTimeout(() => setError(''), 5000);
+            // Show a modal prompt for Site Manager instead of the text error
+            setAlertModalInfo({
+                open: true,
+                title: 'Entry Exists for Today',
+                message: 'A budget has already been logged for today. To make any changes, please contact an Administrator.'
+            });
             return;
         }
     }
@@ -838,7 +877,7 @@ export default function BudgetingTab({ loggedInRole }) {
                   }}
                 >Generate Budget Report</button>
                 {/* Alerts for budget status */}
-                {selectedProject.curr_budget && (
+                {selectedProject.curr_budget > 0 && (
                   <div style={{ color: (accumulativeSpent / selectedProject.curr_budget) >= 1 ? COLORS.red : ((accumulativeSpent / selectedProject.curr_budget) >= 0.9 ? COLORS.yellow : COLORS.greenDark), fontWeight: 'bold', marginTop: 8 }}>
                     {(accumulativeSpent / selectedProject.curr_budget) >= 1
                       ? 'Overbudget!'
@@ -896,7 +935,7 @@ export default function BudgetingTab({ loggedInRole }) {
                     : 'No budget data'}
                 </div>
                 {/* Budget status alerts */}
-                {selectedProject.curr_budget && (
+                {selectedProject.curr_budget > 0 && (
                   <div style={{ color: (accumulativeSpent / selectedProject.curr_budget) >= 1 ? COLORS.red : ((accumulativeSpent / selectedProject.curr_budget) >= 0.9 ? COLORS.yellow : COLORS.greenDark), fontWeight: 'bold', marginTop: 8 }}>
                     {(accumulativeSpent / selectedProject.curr_budget) >= 1
                       ? 'Overbudget!'
@@ -1419,6 +1458,14 @@ export default function BudgetingTab({ loggedInRole }) {
         onReplace={confirmReplaceUsage}
         newData={dailyUsage}
         existingData={existingDailyRecord}
+      />
+
+      {/* Informational Alert Modal */}
+      <AlertModal
+        open={alertModalInfo.open}
+        onClose={() => setAlertModalInfo({ open: false, title: '', message: '' })}
+        title={alertModalInfo.title}
+        message={alertModalInfo.message}
       />
     </div>
   );
