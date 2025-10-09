@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import BudgetingTab from './BudgetingTab';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import './App.scss';
@@ -7,6 +7,28 @@ import './App.scss';
 // App.js - Main React application file for BuildSmart
 // This file contains the main app structure, navigation, routing, and global logic.
 // Comments are provided throughout to explain both simply and technically.
+
+// ProtectedRoute component: Protects routes based on authentication and role requirements
+// Props:
+// - children: The component to render if access is allowed
+// - requireAuth: boolean indicating if authentication is required
+// - allowedRoles: array of roles that can access this route
+// - loggedInUser: current logged in username
+// - loggedInRole: current user's role
+function ProtectedRoute({ children, requireAuth = false, allowedRoles = [], loggedInUser, loggedInRole }) {
+  // If authentication is required but user is not logged in, redirect to home
+  if (requireAuth && !loggedInUser) {
+    return <Navigate to="/" replace />;
+  }
+  
+  // If specific roles are required but user doesn't have the right role, redirect to home
+  if (allowedRoles.length > 0 && (!loggedInRole || !allowedRoles.includes(loggedInRole))) {
+    return <Navigate to="/" replace />;
+  }
+  
+  // If all checks pass, render the protected component
+  return children;
+}
 
 // AboutUs component: Formal About Us page with sample text
 function AboutUs() {
@@ -764,15 +786,25 @@ function App() {
   // Simple: The root component that handles login, navigation, and page switching
   // Technical: Uses React Router for routing, manages authentication state, handles page transitions
   const [loginOpen, setLoginOpen] = useState(false); // Is login popup visible?
-  const [loggedInUser, setLoggedInUser] = useState(() => localStorage.getItem('loggedInUser'));
-  const [loggedInRole, setLoggedInRole] = useState(() => localStorage.getItem('loggedInRole'));
-  const [loginTime, setLoginTime] = useState(() => {
-    const t = localStorage.getItem('loginTime');
-    return t ? Number(t) : null;
-  });
+  const [loggedInUser, setLoggedInUser] = useState(null); // Current logged in username
+  const [loggedInRole, setLoggedInRole] = useState(null); // Current user's role
+  const [loginTime, setLoginTime] = useState(null); // Timestamp when user logged in
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false); // Is logout confirmation modal visible?
   const location = useLocation(); // Current route location from React Router
   const navigate = require('react-router-dom').useNavigate(); // Navigation function
+
+  // Load login state from localStorage on app initialization
+  useEffect(() => {
+    const savedUser = localStorage.getItem('buildsmart_user');
+    const savedRole = localStorage.getItem('buildsmart_role');
+    const savedLoginTime = localStorage.getItem('buildsmart_login_time');
+    
+    if (savedUser && savedRole && savedLoginTime) {
+      setLoggedInUser(savedUser);
+      setLoggedInRole(savedRole);
+      setLoginTime(parseInt(savedLoginTime, 10));
+    }
+  }, []);
 
   const handleLogoutClick = () => {
     // Handle logout button click: Show confirmation modal
@@ -783,14 +815,19 @@ function App() {
 
   const confirmLogout = () => {
     // Confirm logout: Clear user data and redirect to home
+    // Simple: Logs out the user and goes back to homepage
+    // Technical: Resets all authentication state and navigates to root route
     setLoggedInUser(null);
     setLoggedInRole(null);
     setLoginTime(null);
     setLoginOpen(false);
     setShowLogoutConfirm(false);
-    localStorage.removeItem('loggedInUser');
-    localStorage.removeItem('loggedInRole');
-    localStorage.removeItem('loginTime');
+    
+    // Clear login data from localStorage
+    localStorage.removeItem('buildsmart_user');
+    localStorage.removeItem('buildsmart_role');
+    localStorage.removeItem('buildsmart_login_time');
+    
     navigate('/');
   };
 
@@ -826,14 +863,18 @@ function App() {
 
   const handleLogin = (username, role) => {
     // Handle successful login: Set user data and close popup
+    // Simple: Records that user is now logged in
+    // Technical: Updates authentication state with username, role, and current timestamp
+    const currentTime = Date.now();
     setLoggedInUser(username);
     setLoggedInRole(role);
-    const now = Date.now();
-    setLoginTime(now); // Record login time
+    setLoginTime(currentTime); // Record login time
     setLoginOpen(false); // Close login popup
-    localStorage.setItem('loggedInUser', username);
-    localStorage.setItem('loggedInRole', role);
-    localStorage.setItem('loginTime', now.toString());
+    
+    // Save login data to localStorage for persistence
+    localStorage.setItem('buildsmart_user', username);
+    localStorage.setItem('buildsmart_role', role);
+    localStorage.setItem('buildsmart_login_time', currentTime.toString());
   };
 
   const [footerAnimated, setFooterAnimated] = useState(false); // Is footer animation active?
@@ -951,7 +992,16 @@ function App() {
               <Routes location={location}>
                 <Route path="/" element={<Home />} />
                 <Route path="/about" element={<AboutUs />} />
-                <Route path="/budget" element={<BudgetingTab loggedInRole={loggedInRole} />} />
+                <Route path="/budget" element={
+                  <ProtectedRoute 
+                    requireAuth={true} 
+                    allowedRoles={["Site Manager", "Document Control Manager", "Admin"]}
+                    loggedInUser={loggedInUser}
+                    loggedInRole={loggedInRole}
+                  >
+                    <BudgetingTab loggedInRole={loggedInRole} />
+                  </ProtectedRoute>
+                } />
                 <Route path="/request" element={<RequestForm />} />
               </Routes>
             </div>
