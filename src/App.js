@@ -32,71 +32,165 @@ function ProtectedRoute({ children, requireAuth = false, allowedRoles = [], logg
 
 // AboutUs component: Formal About Us page with sample text
 function AboutUs() {
+  const [isVisible, setIsVisible] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+  const containerRef = useRef(null);
+
+  // This effect listens to scroll events to trigger animations and parallax.
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.pageYOffset);
+
+      if (containerRef.current) {
+        const top = containerRef.current.getBoundingClientRect().top;
+        const windowHeight = window.innerHeight;
+        if (top < windowHeight * 0.85) {
+          setIsVisible(true);
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); 
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const paragraphs = [
+    // --- Introduction / About Us ---
+    <h2 key="h1" style={{marginTop: '1.5rem', color: '#333'}}>Who Are We</h2>,
+    <p key="p1" style={{fontSize: '1.15rem', marginBottom: '1.2rem'}}>
+      <strong>Construction & Property Solutions (Pvt) Ltd (CPS)</strong> was founded in <em>2017</em> to bridge the gap between Sri Lanka’s local construction industry and modern engineering technology. We specialize in delivering <strong>end‑to‑end solutions</strong> across civil, mechanical, and electrical engineering, from industrial and commercial building design to turnkey project management.
+    </p>,
+    <p key="p1b" style={{fontSize: '1.15rem', marginBottom: '1.2rem'}}>
+      Since its inception, CPS has steadily grown from a small-scale service provider into a trusted name in Sri Lanka’s construction sector. Over the years, we have expanded our portfolio to include <em>infrastructure development, steel fabrication, and specialized MEP solutions</em>, while maintaining a strong reputation for reliability and innovation.
+    </p>,
+
+    // --- Team & Leadership ---
+    <h2 key="h2" style={{marginTop: '1.5rem', color: '#333'}}>Our Team & Leadership</h2>,
+    <p key="p2" style={{fontSize: '1.15rem', marginBottom: '1.2rem'}}>
+      Our team is led by highly experienced <strong>Chartered Engineers</strong> and supported by skilled professionals in civil, mechanical, and electrical disciplines. With decades of combined expertise, we have successfully delivered projects ranging from <em>steel structures, RCC buildings, and roadworks</em> to <em>factory floor design, machinery installation, and MEP solutions</em>.
+    </p>,
+    <p key="p2b" style={{fontSize: '1.15rem', marginBottom: '1.2rem'}}>
+      At the helm, our directors bring over 20–25 years of proven industry experience. Their leadership is complemented by a dedicated team of <strong>quantity surveyors, site supervisors, and skilled craftsmen</strong> who ensure that every project is executed with precision. This blend of strategic vision and hands‑on expertise allows CPS to take on complex challenges with confidence.
+    </p>,
+
+    // --- Manufacturing & Capabilities ---
+    <h2 key="h3" style={{marginTop: '1.5rem', color: '#333'}}>Manufacturing & Capabilities</h2>,
+    <p key="p3" style={{fontSize: '1.15rem', marginBottom: '1.2rem'}}>
+      Beyond construction services, CPS also manufactures <strong>cement cellular blocks, solid blocks, and interlock paving blocks</strong> to SLS standards, with plans to expand into eco‑friendly and lightweight building materials. Backed by a fully equipped mechanical workshop and modern fabrication facilities, we are capable of handling complex steel and concrete projects with precision and reliability.
+    </p>,
+
+    // --- Vision & Mission ---
+    <h2 key="h4" style={{marginTop: '1.5rem', color: '#333'}}>Vision & Mission</h2>,
+    <p key="p4" style={{fontSize: '1.15rem', marginBottom: '1.2rem'}}>
+      At CPS, our vision is to <em>uphold engineering standards in every aspect of construction</em>, while our mission is to achieve <strong>ICTAD Category 1 contractor grading with ISO certification</strong> in the near future. With a commitment to quality, innovation, and trust, we continue to build lasting solutions for Sri Lanka’s evolving construction landscape.
+    </p>,
+
+    // --- Client Focus ---
+    <h2 key="h5" style={{marginTop: '1.5rem', color: '#333'}}>Client Commitment</h2>,
+    <p key="p5" style={{fontSize: '1.15rem', marginBottom: '1.2rem'}}>
+      We also place strong emphasis on <strong>client satisfaction and sustainability</strong>. Every project is approached with a focus on safety, efficiency, and environmental responsibility. By integrating modern technologies with proven engineering practices, we ensure that our solutions are not only durable but also aligned with the future needs of communities and industries. This dedication to excellence has made CPS a trusted partner for organizations seeking reliable, forward‑thinking construction solutions.
+    </p>,
+
+    // --- Closing ---
+    <p key="p6" align="center" style={{fontSize: '1.15rem', fontWeight: 'bold', marginTop: '1.5rem', color: '#555'}}>
+      <em>For more information, please contact us or visit our office.</em>
+    </p>
+  ];
+
   return (
-    <div className="aboutus-formal-container" style={{
-      maxWidth: 850,
-      margin: '3rem auto',
-      background: '#fff',
-      borderRadius: 12,
-      boxShadow: '0 2px 16px #e0e0e0',
-      padding: '2.5rem 2rem 3rem 3rem',
-      fontFamily: 'Segoe UI, Arial, sans-serif',
-      color: '#1a2a1a',
-      lineHeight: 1.7
-    }}>
-      <h1 style={{
-        fontSize: '2.2rem',
-        fontWeight: 700,
-        marginBottom: '1.5rem',
-        color: '#205c20',
-        textAlign: 'center',
-        letterSpacing: '0.02em'
-      }}>About Us</h1>
-      <p style={{fontSize: '1.15rem',marginBottom: '1.2rem'}}>
-        <strong>Construction & Property Solutions (Pvt) Ltd (CPS)</strong> was founded in <em>2017</em> to bridge the gap between Sri Lanka’s local construction industry and modern engineering technology. We specialize in delivering <strong>end‑to‑end solutions</strong> across civil, mechanical, and electrical engineering, from industrial and commercial building design to turnkey project management.
-      </p>
-      <p style={{fontSize: '1.15rem',marginBottom: '1.2rem'}}>
-        Our team is led by highly experienced <strong>Chartered Engineers</strong> and supported by skilled professionals in civil, mechanical, and electrical disciplines. With decades of combined expertise, we have successfully delivered projects ranging from <em>steel structures, RCC buildings, and roadworks</em> to <em>factory floor design, machinery installation, and MEP solutions</em>.
-      </p>
-      <p style={{fontSize: '1.15rem',marginBottom: '1.2rem'}}>
-        Beyond construction services, CPS also manufactures <strong>cement cellular blocks, solid blocks, and interlock paving blocks</strong> to SLS standards, with plans to expand into eco‑friendly and lightweight building materials. Backed by a fully equipped mechanical workshop and modern fabrication facilities, we are capable of handling complex steel and concrete projects with precision and reliability.
-      </p>
-      <p style={{fontSize: '1.15rem',marginBottom: '1.2rem'}}>
-        At CPS, our vision is to <em>uphold engineering standards in every aspect of construction</em>, while our mission is to achieve <strong>ICTAD Category 1 contractor grading with ISO certification</strong> in the near future. With a commitment to quality, innovation, and trust, we continue to build lasting solutions for Sri Lanka’s evolving construction landscape.
-      </p>
-      <p style={{fontSize: '1.15rem',marginBottom: '1.2rem'}}>
-        We also place strong emphasis on <strong>client satisfaction and sustainability</strong>. Every project is approached with a focus on safety, efficiency, and environmental responsibility. By integrating modern technologies with proven engineering practices, we ensure that our solutions are not only durable but also aligned with the future needs of communities and industries. This dedication to excellence has made CPS a trusted partner for organizations seeking reliable, forward‑thinking construction solutions.
-      </p>
-      <p align="center" style={{fontSize: '1.15rem', fontWeight: 'bold', marginTop: '1.5rem', color: '#555'}}>
-        <em>For more information, please contact us or visit our office.</em>
-      </p>
-      <p align="center" style={{marginTop: '1.5rem'}}>
-        <a href={process.env.PUBLIC_URL + '/Updated CPS Profile.pdf'} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{padding: '10px 20px', fontSize: '1.1rem'}}>View Profile (PDF)</a>
-      </p>
-      <img 
-        src={process.env.PUBLIC_URL + '/frontend-show.png'} 
-        alt="Construction Site" 
+    <div style={{ position: 'relative', padding: '3rem 0' }}>
+      <div
+        ref={containerRef}
+        className="aboutus-formal-container"
         style={{
-          position: 'absolute',
-          top: '34%',
-          right: '-38px',
-          transform: 'translateY(-50%) rotate(9deg)',
-          width: '350px',
-          boxShadow: '0 4px 8px rgba(0,0,0,0.4)',
-          borderRadius: '8px'
+          position: 'relative',
+          zIndex: 2,
+          maxWidth: 850,
+          margin: '0 auto',
+          background: '#fff',
+          borderRadius: 12,
+          boxShadow: '0 2px 16px #e0e0e0',
+          padding: '2.5rem 2rem 3rem 3rem',
+          fontFamily: 'Segoe UI, Arial, sans-serif',
+          color: '#1a2a1a',
+          lineHeight: 1.7,
+          opacity: isVisible ? 1 : 0,
+          transform: isVisible ? 'translateY(0)' : 'translateY(40px)',
+          transition: 'opacity 0.8s ease-out, transform 0.8s ease-out'
         }}
-      />
+      >
+        <h1 style={{ fontSize: '2.2rem', fontWeight: 700, marginBottom: '1.5rem', color: '#205c20', textAlign: 'center', letterSpacing: '0.02em' }}>
+          About
+        </h1>
+        {paragraphs.map((p, index) => (
+          <div
+            key={index}
+            style={{
+              opacity: isVisible ? 1 : 0,
+              transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
+              transition: 'opacity 0.6s ease-out, transform 0.6s ease-out',
+              transitionDelay: `${0.2 + index * 0.1}s`
+            }}
+          >
+            {p}
+          </div>
+        ))}
+        <p align="center" style={{marginTop: '1.5rem', opacity: isVisible ? 1 : 0, transition: 'opacity 0.6s ease-out', transitionDelay: '0.9s'}}>
+          <a href={process.env.PUBLIC_URL + '/Updated CPS Profile.pdf'} target="_blank" rel="noopener noreferrer" className="cta-btn" style={{padding: '10px 20px', fontSize: '1.1rem'}}>View Profile (PDF)</a>
+        </p>
+        
+        {/* --- Parallax Image Wrapper 1 --- */}
+        <div style={{
+            position: 'absolute', top: '500px', right: '-375px', width: '400px',
+            // CHANGED: Use isVisible to trigger the animation
+            transform: `translateX(${isVisible ? '0' : '100px'})`,
+            opacity: isVisible ? 1 : 0,
+            transition: 'transform 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s, opacity 0.8s ease-out 0.4s'
+        }}>
+            <img 
+              src={process.env.PUBLIC_URL + '/frontend-show.png'} 
+              alt="Construction Site" 
+              style={{
+                width: '100%', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0,0,0,0.4)',
+                transform: `translateY(calc(-50% + ${scrollY * 0.15}px)) rotate(${1 + 6 * Math.cos(scrollY * 0.003)}deg)`,
+              }}
+            />
+        </div>
+
+        {/* --- Parallax Image Wrapper 2 --- */}
+        <div style={{
+            position: 'absolute', top:'900px', left: '-390px', width: '400px',
+            // CHANGED: Use isVisible to trigger the animation
+            transform: `translateX(${isVisible ? '0' : '-100px'})`,
+            opacity: isVisible ? 1 : 0,
+            transition: 'transform 1s cubic-bezier(0.2, 0.8, 0.2, 1) 0.4s, opacity 0.8s ease-out 0.4s'
+        }}>
+            <img 
+              src={process.env.PUBLIC_URL + '/frontend-show(2).png'} 
+              alt="Construction Engineers" 
+              style={{
+                width: '100%', borderRadius: '8px', boxShadow: '0 4px 8px rgba(0,0,0,0.4)',
+                transform: `translateY(calc(80% - ${scrollY * 0.15}px)) rotate(${2 - 6 * Math.cos(scrollY * 0.003 - 1)}deg)`,
+              }}
+            />
+        </div>
+      </div>
+      
+      {/* Background Girder Image */}
       <img 
-        src={process.env.PUBLIC_URL + '/frontend-show(2).png'} 
-        alt="Construction Site" 
+        src={process.env.PUBLIC_URL + '/suspended_girder.png'} 
+        alt="Suspended Girder" 
         style={{
           position: 'absolute',
-          bottom: '30%',
-          left: '-100px',
-          transform: 'translateY(80%) rotate(-4deg)',
-          width: '400px',
-          boxShadow: '0 4px 8px rgba(0,0,0,0.4)',
-          borderRadius: '8px'
+          bottom: '50%',
+          left: '50%',
+          width: '1800px',
+          filter: 'brightness(0.75) opacity(0.35)',
+          zIndex: 1,
+          pointerEvents: 'none',
+          transform: `translateX(-50%) translateY(${scrollY * 0.85}px) rotate(3deg)`
         }}
       />
     </div>
@@ -153,8 +247,8 @@ function Navbar({ onLoginClick, loggedInUser, loggedInRole, loginTime, onLogoutC
       <div className={navOpen ? 'nav-links open' : 'nav-links'}>
         {/* Home link */}
         <Link to="/" onClick={() => setNavOpen(false)}>Home</Link>
-        {/* About Us tab for all users */}
-        <Link to="/about" onClick={() => setNavOpen(false)}>About Us</Link>
+        {/* About tab for all users */}
+        <Link to="/about" onClick={() => setNavOpen(false)}>About</Link>
         {/* Budgeting tab only for staff roles */}
         {(loggedInUser && ["Site Manager", "Document Control Manager", "Admin"].includes(loggedInRole)) && (
           <Link to="/budget" onClick={() => setNavOpen(false)}>Budgeting</Link>
