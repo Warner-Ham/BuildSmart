@@ -727,7 +727,6 @@ function Home() {
           </div>
         </div>
       </div>
-      {/* ...existing code... */}
       {/* Projects section: Displays featured projects from backend */}
       {/* Simple: Shows a list of completed projects with images and details */}
       {/* Technical: Conditionally renders loading or project list, maps over projects array */}
@@ -876,6 +875,23 @@ function RequestForm() {
 }
 
 function App() {
+  useEffect(() => {
+    // Fetch budget alerts from the backend
+    fetch("/api/budget-alerts")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch budget alerts");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Budget Alerts:", data);
+      })
+      .catch((error) => {
+        console.error("Error fetching budget alerts:", error);
+      });
+  }, []);
+
   // App component: Main application component managing global state and routing
   // Simple: The root component that handles login, navigation, and page switching
   // Technical: Uses React Router for routing, manages authentication state, handles page transitions

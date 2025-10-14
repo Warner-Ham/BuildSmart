@@ -50,6 +50,16 @@ CREATE TABLE project_budgets (
     FOREIGN KEY (proj_id) REFERENCES project(id) ON DELETE CASCADE
 );
 
+CREATE TABLE budget_alerts (
+    alert_id INT AUTO_INCREMENT PRIMARY KEY,
+    project_id INT NOT NULL,
+    created_date DATE NOT NULL,
+    updated_date DATE NOT NULL,
+    excess_amount DECIMAL(12,2) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'ongoing', -- 'ongoing' or 'resolved'
+    FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+);
+
 -- staff data
 INSERT INTO staff (id, username, password, email, role) VALUES
 ('CBE04', 'Not_Amaya', '20AMAYA02', 'amaya@gmail.com', 'Project Manager'),
