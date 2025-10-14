@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
 
-// Green color palette
+// Enhanced color palette with modern gradients
 const COLORS = {
   green: '#27ae60',
   greenDark: '#205c20',
   greenLight: '#eaf7ea',
+  greenGradient: 'linear-gradient(135deg, #336504 0%, #369A06 100%)',
   yellow: '#f7c948',
   red: '#e74c3c',
   gray: '#f4f4f4',
+  grayLight: '#fafafa',
   border: '#e0e0e0',
+  borderLight: '#f0f0f0',
   text: '#222',
+  textLight: '#666',
+  shadow: '0 4px 20px rgba(39, 174, 96, 0.1)',
+  shadowHover: '0 8px 25px rgba(39, 174, 96, 0.15)',
 };
 
 function ConfirmationModal({ open, onClose, onConfirm, title, message, confirmText = "Yes", cancelText = "No" }) {
@@ -191,7 +197,7 @@ function AlertModal({ open, onClose, title, message }) {
 
 function getBudgetStatusColor(percent) {
   if (percent >= 100) return COLORS.red;
-  if (percent >= 90) return COLORS.yellow;
+  if (percent >= 85) return COLORS.yellow;
   return COLORS.green;
 }
 
@@ -216,6 +222,20 @@ export default function BudgetingTab({ loggedInRole }) {
   const [existingDailyRecord, setExistingDailyRecord] = useState(null);
   const [alertModalInfo, setAlertModalInfo] = useState({ open: false, title: '', message: '' });
 
+  // Project search and filtering states
+  const [searchFilters, setSearchFilters] = useState({
+    name: '',
+    client: '',
+    location: '',
+    budgetStatus: '', // 'overbudget', 'within-budget', 'approaching-limit', 'no-budget-logged'
+    startDateFrom: '',
+    startDateTo: ''
+  });
+  const [filteredProjects, setFilteredProjects] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [projectsPerPage] = useState(10);
+  const [projectBudgetData, setProjectBudgetData] = useState({});
+
   // Confirmation dialog states
   const [confirmations, setConfirmations] = useState({
     createBudget: false,
@@ -226,15 +246,41 @@ export default function BudgetingTab({ loggedInRole }) {
   });
   const [actionData, setActionData] = useState({});
 
-  // Fetch projects on mount
+  // Fetch projects on mount and periodically
   useEffect(() => {
-    setLoading(true);
-    fetch('http://localhost:8080/api/projects')
-      .then(res => res.json())
-      .then(data => setProjects(data))
-      .catch(() => setError('Failed to load projects'))
-      .finally(() => setLoading(false));
+    const fetchAllProjects = (isInitialLoad = false) => {
+      if (isInitialLoad) setLoading(true);
+      fetch('http://localhost:8080/api/projects')
+        .then(res => res.json())
+        .then(data => {
+          setProjects(data);
+          if (isInitialLoad) setFilteredProjects(data);
+        })
+        .catch(() => setError('Failed to load projects'))
+        .finally(() => {
+          if (isInitialLoad) setLoading(false);
+        });
+    };
+
+    fetchAllProjects(true); // Initial load
+    const interval = setInterval(() => fetchAllProjects(false), 500);
+
+    return () => clearInterval(interval);
   }, []);
+
+  // Fetch budget data when projects change
+  useEffect(() => {
+    if (projects.length > 0) {
+      fetchProjectBudgetData();
+    }
+  }, [projects]);
+
+  // Apply filters when search criteria or projects change
+  useEffect(() => {
+    if (projects.length > 0) {
+      filterProjects();
+    }
+  }, [searchFilters, projects, projectBudgetData]);
 
   // Periodic data fetching for selected project
   useEffect(() => {
@@ -608,59 +654,639 @@ export default function BudgetingTab({ loggedInRole }) {
     });
   };
 
+  // Helper function to check if a project's budget was logged today
+  const isBudgetLoggedToday = async (projectId) => {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const res = await fetch(`http://localhost:8080/api/projects/${projectId}/budgets`);
+      if (res.ok) {
+        const records = await res.json();
+        return records.some(record => 
+          record.allocated_date && record.allocated_date.split('T')[0] === today
+        );
+      }
+    } catch (error) {
+      console.error('Error checking budget log:', error);
+    }
+    return false;
+  };
+
+  // Filter projects based on search criteria
+  const filterProjects = async () => {
+    if (!projects || projects.length === 0) {
+      setFilteredProjects([]);
+      return;
+    }
+
+    let filtered = [...projects];
+
+    // Filter by name
+    if (searchFilters.name) {
+      filtered = filtered.filter(project => 
+        project.name?.toLowerCase().includes(searchFilters.name.toLowerCase())
+      );
+    }
+
+    // Filter by client
+    if (searchFilters.client) {
+      filtered = filtered.filter(project => 
+        project.client?.toLowerCase().includes(searchFilters.client.toLowerCase())
+      );
+    }
+
+    // Filter by location
+    if (searchFilters.location) {
+      filtered = filtered.filter(project => 
+        project.location?.toLowerCase().includes(searchFilters.location.toLowerCase())
+      );
+    }
+
+    // Filter by start date range
+    if (searchFilters.startDateFrom || searchFilters.startDateTo) {
+      filtered = filtered.filter(project => {
+        if (!project.start_date) return false;
+        const projectDate = new Date(project.start_date).getTime();
+        const fromDate = searchFilters.startDateFrom ? new Date(searchFilters.startDateFrom).getTime() : 0;
+        const toDate = searchFilters.startDateTo ? new Date(searchFilters.startDateTo).getTime() : Date.now();
+        return projectDate >= fromDate && projectDate <= toDate;
+      });
+    }
+
+    // Filter by budget status (this requires async operations)
+    if (searchFilters.budgetStatus) {
+      const budgetFiltered = [];
+      for (const project of filtered) {
+        let includeProject = false;
+        
+        const spent = projectBudgetData[project.id]?.spent || 0;
+        const budget = project.curr_budget || 0;
+
+        if (searchFilters.budgetStatus === 'overbudget') {
+          includeProject = budget > 0 && spent >= budget;
+        } else if (searchFilters.budgetStatus === 'within-budget') {
+          if (budget > 0) {
+            const percentage = spent / budget;
+            includeProject = percentage < 0.85;
+          }
+        } else if (searchFilters.budgetStatus === 'approaching-limit') {
+          if (budget > 0) {
+            const percentage = spent / budget;
+            includeProject = percentage >= 0.85 && percentage < 1;
+          }
+        } else if (searchFilters.budgetStatus === 'no-budget-logged') {
+          includeProject = !(await isBudgetLoggedToday(project.id));
+        }
+        
+        if (includeProject) {
+          budgetFiltered.push(project);
+        }
+      }
+      filtered = budgetFiltered;
+    }
+
+    setFilteredProjects(filtered);
+    // setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  // Fetch budget data for all projects (for filtering)
+  const fetchProjectBudgetData = async () => {
+    const budgetData = {};
+    for (const project of projects) {
+      try {
+        const res = await fetch(`http://localhost:8080/api/projects/${project.id}/budgets/sum`);
+        if (res.ok) {
+          const data = await res.json();
+          budgetData[project.id] = { spent: data.sum || 0 };
+        }
+      } catch (error) {
+        console.error(`Error fetching budget data for project ${project.id}:`, error);
+      }
+    }
+    setProjectBudgetData(budgetData);
+  };
+
+  // Handle filter changes
+  const handleFilterChange = (field, value) => {
+    setCurrentPage(1); // Reset to page 1 on any filter change
+    setSearchFilters(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setCurrentPage(1); // Reset to page 1 on any filter change
+    setSearchFilters({
+      name: '',
+      client: '',
+      location: '',
+      budgetStatus: '',
+      startDateFrom: '',
+      startDateTo: ''
+    });
+  };
+
+  // Calculate pagination
+  const indexOfLastProject = currentPage * projectsPerPage;
+  const indexOfFirstProject = indexOfLastProject - projectsPerPage;
+  const currentProjects = filteredProjects.slice(indexOfFirstProject, indexOfLastProject);
+  const totalPages = Math.ceil(filteredProjects.length / projectsPerPage);
+
   return (
     <div className="budgeting-tab" style={{
-      maxWidth: 1000,
+      maxWidth: 1200,
       margin: '2rem auto',
-      padding: '2rem',
-      background: '#dff4e0',
-      border: '4px solid #a5d6a7',
-      borderRadius: 16,
-      boxShadow: '0 2px 16px #e0f2e9',
-      fontFamily: 'Arial, sans-serif',
+      padding: '0',
+      fontFamily: '"Segoe UI", Arial, sans-serif',
       color: COLORS.text
     }}>
-      <h2 style={{ color: COLORS.greenDark, fontWeight: 700, marginBottom: 16, fontSize: '1.8rem' }}>Budgeting</h2>
-      <div style={{ marginBottom: 20 }}>
-        <label style={{ fontWeight: 500, fontSize: '1.2rem' }}>
-          Select Project:
-          <select
-            onChange={e => handleSelectProject(e.target.value)}
-            value={selectedProject ? String(selectedProject.id) : ''}
-            style={{
-              marginLeft: 12,
-              padding: '8px 12px',
-              borderRadius: 8,
-              border: `1px solid ${COLORS.border}`,
-              background: COLORS.gray,
-              color: COLORS.text,
-              fontWeight: 500,
-              fontSize: '1rem'
-            }}
-            disabled={loading || projects.length === 0}
-          >
-            <option value="">-- Select --</option>
-            {projects.map(p => (
-              <option key={p.id} value={String(p.id)}>{p.name} ({p.status})</option>
-            ))}
-          </select>
-        </label>
+      {/* Modern Header */}
+      <div style={{
+        background: COLORS.greenGradient,
+        padding: '1.5rem 2rem',
+        borderRadius: '20px 20px 0 0',
+        color: 'white',
+        boxShadow: COLORS.shadow
+      }}>
+        <h1 style={{ 
+          margin: 0, 
+          fontSize: '2rem', 
+          fontWeight: 700,
+          textShadow: '0 2px 4px rgba(0,0,0,0.3)'
+        }}>
+          Project Budgeting Dashboard
+        </h1>
+        <p style={{ 
+          margin: '0.5rem 0 0 0', 
+          fontSize: '1.2rem', 
+          opacity: 0.9 
+        }}>
+          Manage budgets, track expenses, and monitor project financial health
+        </p>
       </div>
-      {error && (
-        <div style={{ color: COLORS.red, marginBottom: 12, fontWeight: 500, fontSize: '1rem', background: '#fee', padding: '10px', borderRadius: '8px', border: `1px solid ${COLORS.red}` }}>
-          {error}
+
+      {/* Main Content Container */}
+      <div style={{
+        background: 'white',
+        padding: '2rem 3rem',
+        borderRadius: '0 0 20px 20px',
+        boxShadow: COLORS.shadow,
+        minHeight: '600px'
+      }}>
+        
+        {/* Search and Filter Section */}
+        <div style={{
+          background: COLORS.grayLight,
+          padding: '1.5rem',
+          borderRadius: '12px',
+          marginBottom: '2rem',
+          border: `1px solid ${COLORS.borderLight}`,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+        }}>
+          <h3 style={{ 
+            color: COLORS.greenDark, 
+            margin: '0 0 1rem 0',
+            fontSize: '1.3rem',
+            fontWeight: 600
+          }}>
+            Search & Filter Projects
+          </h3>
+          
+          {/* Search Row 1 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: COLORS.textLight }}>
+                Project Name
+              </label>
+              <input
+                type="text"
+                placeholder="Search by name..."
+                value={searchFilters.name}
+                onChange={e => handleFilterChange('name', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: `1px solid ${COLORS.border}`,
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  width: '90%',
+                  transition: 'all 0.2s',
+                  background: 'white'
+                }}
+              />
+            </div>
+            
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: COLORS.textLight }}>
+                Client
+              </label>
+              <input
+                type="text"
+                placeholder="Search by client..."
+                value={searchFilters.client}
+                onChange={e => handleFilterChange('client', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: `1px solid ${COLORS.border}`,
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  width: '90%',
+                  transition: 'all 0.2s',
+                  background: 'white'
+                }}
+              />
+            </div>
+            
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: COLORS.textLight }}>
+                Location
+              </label>
+              <input
+                type="text"
+                placeholder="Search by location..."
+                value={searchFilters.location}
+                onChange={e => handleFilterChange('location', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: `1px solid ${COLORS.border}`,
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  width: '90%',
+                  transition: 'all 0.2s',
+                  background: 'white'
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Search Row 2 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 100px', gap: '1rem', alignItems: 'end' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: COLORS.textLight }}>
+                Budget Status
+              </label>
+              <select
+                value={searchFilters.budgetStatus}
+                onChange={e => handleFilterChange('budgetStatus', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  border: `1px solid ${COLORS.border}`,
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  transition: 'all 0.2s',
+                  background: 'white'
+                }}
+              >
+                <option value="">All Projects</option>
+                <option value="overbudget">Over Budget</option>
+                <option value="within-budget">Within Budget</option>
+                <option value="approaching-limit">Approaching Limit</option>
+                <option value="no-budget-logged">No Budget Logged Today</option>
+              </select>
+            </div>
+            
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: COLORS.textLight }}>
+                Start Date From
+              </label>
+              <input
+                type="date"
+                value={searchFilters.startDateFrom}
+                onChange={e => handleFilterChange('startDateFrom', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '9px 12px',
+                  border: `1px solid ${COLORS.border}`,
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  width: '90%',
+                  transition: 'all 0.2s',
+                  background: 'white'
+                }}
+              />
+            </div>
+            
+            <div>
+              <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500, color: COLORS.textLight }}>
+                Start Date To
+              </label>
+              <input
+                type="date"
+                value={searchFilters.startDateTo}
+                onChange={e => handleFilterChange('startDateTo', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '9px 12px',
+                  border: `1px solid ${COLORS.border}`,
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  width: '90%',
+                  transition: 'all 0.2s',
+                  background: 'white'
+                }}
+              />
+            </div>
+            
+            <button
+              onClick={clearFilters}
+              style={{
+                padding: '11px 15px',
+                background: COLORS.red,
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '0.9rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={e => e.target.style.transform = 'translateY(-1px)'}
+              onMouseOut={e => e.target.style.transform = 'translateY(0)'}
+            >
+              Clear
+            </button>
+          </div>
         </div>
-      )}
-      {(!loading && projects.length === 0 && !error) && (
-        <div style={{ color: COLORS.greenDark, marginBottom: 12, fontWeight: 500 }}>
-          No projects found.<br />
-          Please add projects in the backend or check your API response.
+
+        {/* Projects Table */}
+        <div style={{
+          background: 'white',
+          borderRadius: '12px',
+          border: `1px solid ${COLORS.borderLight}`,
+          overflow: 'hidden',
+          marginBottom: '2rem',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+        }}>
+          <div style={{
+            background: COLORS.greenLight,
+            padding: '1rem 1.5rem',
+            borderBottom: `1px solid ${COLORS.border}`,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <h3 style={{ 
+              margin: 0, 
+              color: COLORS.greenDark, 
+              fontSize: '1.2rem',
+              fontWeight: 600 
+            }}>
+              Projects ({filteredProjects.length} found)
+            </h3>
+            <div style={{ fontSize: '0.9rem', color: COLORS.textLight }}>
+              Page {currentPage} of {totalPages || 1}
+            </div>
+          </div>
+
+          {loading ? (
+            <div style={{ padding: '3rem', textAlign: 'center', color: COLORS.textLight }}>
+              <div style={{ fontSize: '1.1rem' }}>Loading projects...</div>
+            </div>
+          ) : currentProjects.length === 0 ? (
+            <div style={{ padding: '3rem', textAlign: 'center', color: COLORS.textLight }}>
+              <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>No projects found</div>
+              <div style={{ fontSize: '0.9rem' }}>Try adjusting your search filters</div>
+            </div>
+          ) : (
+            <>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: COLORS.grayLight }}>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: COLORS.greenDark, borderBottom: `1px solid ${COLORS.border}` }}>Name</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: COLORS.greenDark, borderBottom: `1px solid ${COLORS.border}` }}>Client</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: COLORS.greenDark, borderBottom: `1px solid ${COLORS.border}` }}>Location</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: COLORS.greenDark, borderBottom: `1px solid ${COLORS.border}` }}>Status</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: COLORS.greenDark, borderBottom: `1px solid ${COLORS.border}` }}>Budget</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: COLORS.greenDark, borderBottom: `1px solid ${COLORS.border}` }}>Progress</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'center', fontWeight: 600, color: COLORS.greenDark, borderBottom: `1px solid ${COLORS.border}` }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentProjects.map(project => {
+                      const spent = projectBudgetData[project.id]?.spent || 0;
+                      const budget = project.curr_budget || 0;
+                      const percentage = budget > 0 ? (spent / budget) * 100 : 0;
+                      const isSelected = selectedProject?.id === project.id;
+                      
+                      return (
+                        <tr 
+                          key={project.id}
+                          style={{
+                            background: isSelected ? COLORS.greenLight : 'white',
+                            borderBottom: `1px solid ${COLORS.borderLight}`,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseOver={e => e.currentTarget.style.background = isSelected ? COLORS.greenLight : COLORS.grayLight}
+                          onMouseOut={e => e.currentTarget.style.background = isSelected ? COLORS.greenLight : 'white'}
+                        >
+                          <td style={{ padding: '12px 16px', fontWeight: 500 }}>{project.name}</td>
+                          <td style={{ padding: '12px 16px' }}>{project.client}</td>
+                          <td style={{ padding: '12px 16px' }}>{project.location}</td>
+                          <td style={{ padding: '12px 16px' }}>
+                            <span style={{
+                              padding: '4px 8px',
+                              borderRadius: '12px',
+                              fontSize: '0.8rem',
+                              fontWeight: 500,
+                              background: project.status.toLowerCase() === 'completed' ? COLORS.green : 
+                                         project.status.toLowerCase().includes('progress') ? COLORS.yellow : COLORS.gray,
+                              color: project.status.toLowerCase() === 'completed' ? 'white' : COLORS.text
+                            }}>
+                              {project.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 16px' }}>
+                            {budget > 0 ? `Rs. ${budget.toLocaleString()}` : 'Not set'}
+                          </td>
+                          <td style={{ padding: '12px 16px' }}>
+                            {budget > 0 ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{
+                                  width: '60px',
+                                  height: '8px',
+                                  background: COLORS.gray,
+                                  borderRadius: '4px',
+                                  overflow: 'hidden'
+                                }}>
+                                  <div style={{
+                                    width: `${Math.min(100, percentage)}%`,
+                                    height: '100%',
+                                    background: getBudgetStatusColor(percentage),
+                                    transition: 'width 0.3s'
+                                  }} />
+                                </div>
+                                <span style={{ fontSize: '0.8rem', color: COLORS.textLight }}>
+                                  {percentage.toFixed(1)}%
+                                </span>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '0.8rem', color: COLORS.textLight }}>-</span>
+                            )}
+                          </td>
+                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                            <button
+                              onClick={() => handleSelectProject(project.id)}
+                              style={{
+                                padding: '6px 12px',
+                                background: isSelected ? COLORS.green : COLORS.greenDark,
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                fontSize: '0.8rem',
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseOver={e => e.target.style.transform = 'translateY(-1px)'}
+                              onMouseOut={e => e.target.style.transform = 'translateY(0)'}
+                            >
+                              {isSelected ? '✓ Selected' : 'Select'}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div style={{
+                  padding: '1rem 1.5rem',
+                  borderTop: `1px solid ${COLORS.borderLight}`,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    disabled={currentPage === 1}
+                    style={{
+                      padding: '6px 12px',
+                      border: `1px solid ${COLORS.border}`,
+                      borderRadius: '6px',
+                      background: 'white',
+                      color: COLORS.text,
+                      cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                      opacity: currentPage === 1 ? 0.5 : 1
+                    }}
+                  >
+                    ← Previous
+                  </button>
+                  
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    const pageNum = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
+                    if (pageNum > totalPages) return null;
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        style={{
+                          padding: '6px 12px',
+                          border: `1px solid ${COLORS.border}`,
+                          borderRadius: '6px',
+                          background: currentPage === pageNum ? COLORS.green : 'white',
+                          color: currentPage === pageNum ? 'white' : COLORS.text,
+                          cursor: 'pointer',
+                          fontWeight: currentPage === pageNum ? 600 : 400
+                        }}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                  
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={currentPage === totalPages}
+                    style={{
+                      padding: '6px 12px',
+                      border: `1px solid ${COLORS.border}`,
+                      borderRadius: '6px',
+                      background: 'white',
+                      color: COLORS.text,
+                      cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+                      opacity: currentPage === totalPages ? 0.5 : 1
+                    }}
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
+            </>
+          )}
         </div>
-      )}
-      {loading && <div style={{ color: COLORS.greenDark, marginBottom: 12 }}>Loading...</div>}
-      {selectedProject && (
-        <div style={{ marginTop: 24 }}>
-          {/* Always show Create Budget card */}
+
+        {/* Error Messages */}
+        {error && (
+          <div style={{ 
+            color: COLORS.red, 
+            marginBottom: '1rem', 
+            fontWeight: 500, 
+            background: '#fee', 
+            padding: '12px 16px', 
+            borderRadius: '8px', 
+            border: `1px solid ${COLORS.red}`,
+            fontSize: '0.9rem'
+          }}>
+            ⚠️ {error}
+          </div>
+        )}
+        
+        {(!loading && projects.length === 0 && !error) && (
+          <div style={{ 
+            color: COLORS.textLight, 
+            marginBottom: '1rem', 
+            padding: '2rem',
+            textAlign: 'center',
+            background: COLORS.grayLight,
+            borderRadius: '8px',
+            border: `1px solid ${COLORS.borderLight}`
+          }}>
+            <div style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>📂 No projects found</div>
+            <div style={{ fontSize: '0.9rem' }}>Please add projects in the backend or check your API response.</div>
+          </div>
+        )}
+        {/* Selected Project Management Section */}
+        {selectedProject && (
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            border: `1px solid ${COLORS.borderLight}`,
+            overflow: 'hidden',
+            boxShadow: COLORS.shadow
+          }}>
+            {/* Selected Project Header */}
+            <div style={{
+              background: COLORS.greenGradient,
+              padding: '1.5rem',
+              color: 'white'
+            }}>
+              <h2 style={{ 
+                margin: 0, 
+                fontSize: '1.5rem', 
+                fontWeight: 700,
+                textShadow: '0 1px 2px rgba(0,0,0,0.3)'
+              }}>
+                Managing: {selectedProject.name}
+              </h2>
+              <p style={{ 
+                margin: '0.5rem 0 0 0', 
+                opacity: 0.9,
+                fontSize: '1.1rem'
+              }}>
+                {selectedProject.client} • {selectedProject.location} • {selectedProject.status}
+              </p>
+            </div>
+
+            {/* Project Management Content */}
+            <div style={{ padding: '2rem' }}>
+              {/* Always show Create Budget card */}
           <div style={{ marginBottom: 32, padding: 20, background: '#fff', border: `1px solid ${COLORS.border}`, borderRadius: 12, boxShadow: '0 1px 8px #e0f2e9' }}>
             <h3 style={{ color: COLORS.greenDark, fontWeight: 600, fontSize: '1.5rem' }}>Project Details</h3>
             <div style={{ marginBottom: 8, fontSize: '1.1rem' }}><strong>Name:</strong> {selectedProject.name}</div>
@@ -671,7 +1297,32 @@ export default function BudgetingTab({ loggedInRole }) {
             <div style={{ marginBottom: 8, fontSize: '1.1rem' }}><strong>End Date:</strong> {selectedProject.end_date ? new Date(selectedProject.end_date).toLocaleDateString() : 'N/A'}</div>
             <div style={{ marginBottom: 8, fontSize: '1.1rem' }}><strong>Pre-Budget:</strong> {selectedProject.pre_budget ? `Rs. ${Number(selectedProject.pre_budget).toLocaleString()}` : 'None'}</div>
             <div style={{ marginBottom: 8, fontSize: '1.1rem' }}><strong>Current Budget:</strong> {selectedProject.curr_budget ? `Rs. ${Number(selectedProject.curr_budget).toLocaleString()}` : 'None'}</div>
-        {(loggedInRole === 'Site Manager' && (selectedProject.pre_budget == null || selectedProject.pre_budget === 0) && (selectedProject.status.toLowerCase() !== 'completed') && (selectedProject.status.toLowerCase() === 'in progress' || selectedProject.status.toLowerCase() === 'ongoing') && (!selectedProject.curr_budget || selectedProject.curr_budget === 0)) && (
+
+            {/* Show budget summary ONLY if the project is completed */}
+            {selectedProject.status.toLowerCase() === 'completed' && (
+              <>
+                <div style={{ marginBottom: 8, fontSize: '1.1rem' }}>
+                  <strong>Accumulative Spent:</strong> {`Rs. ${Number(accumulativeSpent).toLocaleString()}`}
+                </div>
+                {/* Budget Progress Bar */}
+                {selectedProject.curr_budget > 0 && (
+                  <div style={{ margin: '12px 0' }}>
+                    <div style={{ height: 18, width: '100%', background: COLORS.gray, borderRadius: 8, overflow: 'hidden', position: 'relative' }}>
+                      <div style={{
+                        width: `${Math.min(100, (accumulativeSpent / selectedProject.curr_budget) * 100)}%`,
+                        background: getBudgetStatusColor((accumulativeSpent / selectedProject.curr_budget) * 100),
+                        height: '100%',
+                        transition: 'width 0.5s'
+                      }} />
+                    </div>
+                    <div style={{ fontSize: 13, color: COLORS.greenDark, marginTop: 4 }}>
+                      {`${((accumulativeSpent / selectedProject.curr_budget) * 100).toFixed(1)}% of budget used`}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            {(loggedInRole === 'Site Manager' && (selectedProject.pre_budget == null || selectedProject.pre_budget === 0) && (selectedProject.status.toLowerCase() !== 'completed') && (selectedProject.status.toLowerCase() === 'in progress' || selectedProject.status.toLowerCase() === 'ongoing') && (!selectedProject.curr_budget || selectedProject.curr_budget === 0)) && (
               <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}>
                 <input
                   type="number"
@@ -798,7 +1449,7 @@ export default function BudgetingTab({ loggedInRole }) {
             </div>
           )}
 
-          {(loggedInRole === 'Document Control Manager') && (
+          {(loggedInRole === 'Document Control Manager' && selectedProject.status.toLowerCase() !== 'completed') && (
             <div style={{ marginBottom: 32, padding: 20, background: '#fff', border: `1px solid ${COLORS.border}`, borderRadius: 12, boxShadow: '0 1px 8px #e0f2e9' }}>
               <h3 style={{ color: COLORS.greenDark, fontWeight: 600 }}>Budget Monitoring & Actions</h3>
               <div style={{ marginBottom: 8 }}>
@@ -878,10 +1529,10 @@ export default function BudgetingTab({ loggedInRole }) {
                 >Generate Budget Report</button>
                 {/* Alerts for budget status */}
                 {selectedProject.curr_budget > 0 && (
-                  <div style={{ color: (accumulativeSpent / selectedProject.curr_budget) >= 1 ? COLORS.red : ((accumulativeSpent / selectedProject.curr_budget) >= 0.9 ? COLORS.yellow : COLORS.greenDark), fontWeight: 'bold', marginTop: 8 }}>
+                  <div style={{ color: (accumulativeSpent / selectedProject.curr_budget) >= 1 ? COLORS.red : ((accumulativeSpent / selectedProject.curr_budget) >= 0.85 ? COLORS.yellow : COLORS.greenDark), fontWeight: 'bold', marginTop: 8 }}>
                     {(accumulativeSpent / selectedProject.curr_budget) >= 1
                       ? 'Overbudget!'
-                      : ((accumulativeSpent / selectedProject.curr_budget) >= 0.9
+                      : ((accumulativeSpent / selectedProject.curr_budget) >= 0.85
                         ? 'Approaching budget limit!'
                         : '')}
                   </div>
@@ -897,7 +1548,7 @@ export default function BudgetingTab({ loggedInRole }) {
           )}
 
           {/* Admin Combined Container - All budget management functions */}
-          {(loggedInRole === 'Admin') && (
+          {(loggedInRole === 'Admin' && (selectedProject.status.toLowerCase() !== 'completed')) && (
             <div style={{ marginBottom: 32, padding: 20, background: '#fff', border: `1px solid ${COLORS.border}`, borderRadius: 12, boxShadow: '0 1px 8px #e0f2e9' }}>
               <h3 style={{ color: COLORS.greenDark, fontWeight: 600, fontSize: '1.5rem' }}>Budgeting Section</h3>
               
@@ -936,10 +1587,10 @@ export default function BudgetingTab({ loggedInRole }) {
                 </div>
                 {/* Budget status alerts */}
                 {selectedProject.curr_budget > 0 && (
-                  <div style={{ color: (accumulativeSpent / selectedProject.curr_budget) >= 1 ? COLORS.red : ((accumulativeSpent / selectedProject.curr_budget) >= 0.9 ? COLORS.yellow : COLORS.greenDark), fontWeight: 'bold', marginTop: 8 }}>
+                  <div style={{ color: (accumulativeSpent / selectedProject.curr_budget) >= 1 ? COLORS.red : ((accumulativeSpent / selectedProject.curr_budget) >= 0.85 ? COLORS.yellow : COLORS.greenDark), fontWeight: 'bold', marginTop: 8 }}>
                     {(accumulativeSpent / selectedProject.curr_budget) >= 1
                       ? 'Overbudget!'
-                      : ((accumulativeSpent / selectedProject.curr_budget) >= 0.9
+                      : ((accumulativeSpent / selectedProject.curr_budget) >= 0.85
                         ? 'Approaching budget limit!'
                         : '')}
                   </div>
@@ -1067,7 +1718,7 @@ export default function BudgetingTab({ loggedInRole }) {
           )}
 
           {/* Budget Records Table for Document Control Manager */}
-          {(loggedInRole === 'Document Control Manager') && budgetRecords.length > 0 && (
+          {(loggedInRole === 'Document Control Manager'&& (selectedProject.status.toLowerCase() !== 'completed')) && budgetRecords.length > 0 && (
             <div style={{ marginBottom: 32, padding: 20, background: '#fff', border: `1px solid ${COLORS.border}`, borderRadius: 12, boxShadow: '0 1px 8px #e0f2e9' }}>
               <h3 style={{ color: COLORS.greenDark, fontWeight: 600, marginBottom: 16 }}>Budget Records</h3>
               <div style={{ overflowX: 'auto' }}>
@@ -1225,7 +1876,7 @@ export default function BudgetingTab({ loggedInRole }) {
           )}
 
           {/* Budget Records Table for Admin */}
-          {(loggedInRole === 'Admin') && budgetRecords.length > 0 && (
+          {(loggedInRole === 'Admin'&& (selectedProject.status.toLowerCase() !== 'completed')) && budgetRecords.length > 0 && (
             <div style={{ marginBottom: 32, padding: 20, background: '#fff', border: `1px solid ${COLORS.border}`, borderRadius: 12, boxShadow: '0 1px 8px #e0f2e9' }}>
               <h3 style={{ color: COLORS.greenDark, fontWeight: 600, marginBottom: 16 }}>Budget Records</h3>
               <div style={{ overflowX: 'auto' }}>
@@ -1396,8 +2047,9 @@ export default function BudgetingTab({ loggedInRole }) {
               </div>
             </div>
           )}
-        </div>
-      )}
+            </div>
+          </div>
+        )}
       
       {/* Confirmation Dialogs */}
       <ConfirmationModal
@@ -1460,13 +2112,14 @@ export default function BudgetingTab({ loggedInRole }) {
         existingData={existingDailyRecord}
       />
 
-      {/* Informational Alert Modal */}
-      <AlertModal
-        open={alertModalInfo.open}
-        onClose={() => setAlertModalInfo({ open: false, title: '', message: '' })}
-        title={alertModalInfo.title}
-        message={alertModalInfo.message}
-      />
+        {/* Informational Alert Modal */}
+        <AlertModal
+          open={alertModalInfo.open}
+          onClose={() => setAlertModalInfo({ open: false, title: '', message: '' })}
+          title={alertModalInfo.title}
+          message={alertModalInfo.message}
+        />
+      </div>
     </div>
   );
 }

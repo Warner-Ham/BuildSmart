@@ -626,7 +626,7 @@ function Home() {
           <img src={logo} alt="BuildSmart Logo" className="hero-logo" />
           <h1>Welcome to <span className="highlight">BuildSmart</span></h1>
           <p className="subtitle">Your smart solution for building management and innovation.</p>
-          <Link to="" className="cta-btn">Get Started</Link>
+          <Link to="" className="cta-btn-2">Get Started</Link>
         </div>
       </section>
       {/* About section: Company description with scroll-triggered animation */}
@@ -1103,13 +1103,14 @@ function App() {
         </TransitionGroup>
       </div>
       {/* Footer: Bottom section with links and branding */}
-      <footer className={`footer-enhanced footer-animate-${location.pathname.replace('/', '') || 'home'}${footerAnimated ? ' footer-animated' : ''}`}>
+      {/* MODIFIED: Added position and zIndex to ensure footer is on top of page elements like the girder. */}
+      <footer className={`footer-enhanced footer-animate-${location.pathname.replace('/', '') || 'home'}${footerAnimated ? ' footer-animated' : ''}`} style={{ position: 'relative', zIndex: 2 }}>
         <div className="footer-main">
           <div className="footer-brand">
             <img src={logoFooter} alt="BuildSmart Logo" className="footer-logo" />
             <div className="footer-brand-text">
               <strong>BuildSmart</strong><br />
-              <span>Your smart solution for building management and innovation.</span>
+              <span style={{opacity: 0.85}}>Your smart solution for building management and innovation.</span>
             </div>
           </div>
           <div className="footer-links">
@@ -1117,7 +1118,7 @@ function App() {
               <h4>General</h4>
               <ul>
                 <li><Link to="/">Home</Link></li>
-                <li><Link to="/budget">Budgeting</Link></li>
+                <li><Link to="/about">About</Link></li>
                 <li><Link to="/request">Request</Link></li>
               </ul>
             </div>
