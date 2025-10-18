@@ -1,136 +1,218 @@
 package com.example.buildsmart.repositories;
 
-import com.example.buildsmart.model.Staff;
-import com.example.buildsmart.model.StaffRole;
-import com.example.buildsmart.model.StaffStatus;
+import com.example.buildsmart.entity.Staff;
+import com.example.buildsmart.enums.StaffRole;
+import com.example.buildsmart.enums.StaffStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
 /**
- * In-memory implementation of Staff repository
- * This will be replaced with database implementation in production
+ * Staff Repository - Spring Data JPA Repository
+ * Provides database operations for Staff entity
  */
 @Repository
-public class StaffRepository implements BaseRepository<Staff, String> {
-    private final Map<String, Staff> staffDatabase;
+public interface StaffRepository extends JpaRepository<Staff, Long> {
 
-    public StaffRepository(){
+    // ==================== FIND BY UNIQUE FIELDS ====================
 
-        this.staffDatabase = new HashMap<>();
-        System.out.println("StaffRepository initialized with in-memory storage");
-    }
+    /**
+     * Find staff by staff ID
+     */
+    Optional<Staff> findByStaffId(String staffId);
 
-    @Override
-    public Staff save(Staff staff) {
-        if (staff == null) {
-            throw new IllegalArgumentException("Staff cannot be null");
-        }
-        staffDatabase.put(staff.getStaffId(), staff);
-        System.out.println("Staff saved: " + staff.getStaffId());
-        return staff;
-    }
+    /**
+     * Find staff by email
+     */
+    Optional<Staff> findByEmail(String email);
 
-    @Override
-    public Optional<Staff> findById(String id) {
-        if(id == null || id.trim().isEmpty()){
-            return Optional.empty();
-        }
-        return Optional.ofNullable(staffDatabase.get(id));
-    }
+    /**
+     * Check if email exists
+     */
+    boolean existsByEmail(String email);
 
-    @Override
-    public List<Staff> findAll() {
+    /**
+     * Find staff by username (for authentication)
+     */
+    Optional<Staff> findByUsername(String username);
 
-        return new ArrayList<>(staffDatabase.values());
-    }
+    /**
+     * Check if username exists
+     */
+    boolean existsByUsername(String username);
 
-    @Override
-    public boolean delete(String id) {
-        if (id == null || id.trim().isEmpty()) {
-            return false;
-        }
-        Staff removed = staffDatabase.remove(id);
-        if (removed != null){
-            System.out.println("Staff deleted: " + id);
-            return true;
-        }
-        return false;
-    }
+    /**
+     * Check if staff ID exists
+     */
+    boolean existsByStaffId(String staffId);
 
-    @Override
-    public boolean exists(String id) {
+    // ==================== FIND BY ROLE ====================
 
-        return id != null && staffDatabase.containsKey(id);
-    }
+    /**
+     * Find all staff by role
+     */
+    List<Staff> findByRole(StaffRole role);
 
-    @Override
-    public long count() {
+    /**
+     * Find staff by role with pagination
+     */
+    Page<Staff> findByRole(StaffRole role, Pageable pageable);
 
-        return staffDatabase.size();
-    }
+    /**
+     * Count staff by role
+     */
+    long countByRole(StaffRole role);
 
-    //Query methods specific to Staff
-    public List<Staff> findByRole(StaffRole role) {
-        if (role == null){
-            return new ArrayList<>();
-        }
-        return staffDatabase.values().stream()
-                .filter(staff -> staff.getRole() == role)
-                .collect(Collectors.toList());
-    }
+    // ==================== FIND BY STATUS ====================
 
-    public List<Staff> findByStatus(StaffStatus status){
-        if (status == null) {
-            return new ArrayList<>();
-        }
-        return staffDatabase.values().stream()
-                .filter(staff -> staff.getStatus() == status)
-                .collect(Collectors.toList());
-    }
+    /**
+     * Find all staff by status
+     */
+    List<Staff> findByStatus(StaffStatus status);
 
-    public Optional<Staff> findByEmail(String email){
-        if(email == null || email.trim().isEmpty()){
-            return Optional.empty();
-        }
-        return staffDatabase.values().stream()
-                .filter(staff -> staff.getEmail().equalsIgnoreCase(email.trim()))
-                .findFirst();
-    }
+    /**
+     * Find staff by status with pagination
+     */
+    Page<Staff> findByStatus(StaffStatus status, Pageable pageable);
 
-    public List<Staff> findByName(String firstName, String lastName){
-        return staffDatabase.values().stream()
-                .filter(staff -> {
-                    boolean firstNameMatch = firstName == null ||
-                        staff.getFullName().toLowerCase().contains(firstName.toLowerCase());
-                    boolean lastNameMatch = lastName == null ||
-                        staff.getLastName().toLowerCase().contains(lastName.toLowerCase());
-                    return firstNameMatch && lastNameMatch;
-                })
-                .collect(Collectors.toList());
-    }
+    /**
+     * Count staff by status
+     */
+    long countByStatus(StaffStatus status);
 
+    // ==================== FIND BY ROLE AND STATUS ====================
 
-    //Utility method to clear all data
-    public void clear(){
-        staffDatabase.clear();
-        System.out.println("All staff data cleared");
-    }
+    /**
+     * Find staff by role and status
+     */
+    List<Staff> findByRoleAndStatus(StaffRole role, StaffStatus status);
 
-    //Get repository statistics
-    public Map<String, Object> getRepositoryStats(){
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalRecords", count());
-        stats.put("roleDistribution", Arrays.stream(StaffRole.values())
-                .collect(Collectors.toMap(
-                        role -> role.name(),
-                        role -> findByRole(role).size()
-                )));
-        stats.put("statusDistribution", Arrays.stream(StaffStatus.values())
-                .collect(Collectors.toMap(
-                        status -> status.name(),
-                        status -> findByStatus(status).size()
-                )));
-        return stats;
-    }
+    /**
+     * Find active staff by role
+     */
+    @Query("SELECT s FROM Staff s WHERE s.role = :role AND s.status = 'ACTIVE'")
+    List<Staff> findActiveStaffByRole(@Param("role") StaffRole role);
+
+    // ==================== SEARCH BY NAME ====================
+
+    /**
+     * Find staff by first name (case insensitive)
+     */
+    List<Staff> findByFirstNameContainingIgnoreCase(String firstName);
+
+    /**
+     * Find staff by last name (case insensitive)
+     */
+    List<Staff> findByLastNameContainingIgnoreCase(String lastName);
+
+    /**
+     * Find staff by full name search
+     */
+    @Query("SELECT s FROM Staff s WHERE " +
+            "LOWER(s.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(s.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+            "LOWER(CONCAT(s.firstName, ' ', s.lastName)) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    List<Staff> searchByName(@Param("searchTerm") String searchTerm);
+
+    /**
+     * Find staff by first name and last name
+     */
+    @Query("SELECT s FROM Staff s WHERE " +
+            "(:firstName IS NULL OR LOWER(s.firstName) LIKE LOWER(CONCAT('%', :firstName, '%'))) AND " +
+            "(:lastName IS NULL OR LOWER(s.lastName) LIKE LOWER(CONCAT('%', :lastName, '%')))")
+    List<Staff> findByFirstNameAndLastName(
+            @Param("firstName") String firstName,
+            @Param("lastName") String lastName
+    );
+
+    // ==================== DATE-BASED QUERIES ====================
+
+    /**
+     * Find staff created after specific date
+     */
+    List<Staff> findByCreatedAtAfter(LocalDateTime date);
+
+    /**
+     * Find staff created between dates
+     */
+    List<Staff> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
+
+    /**
+     * Find staff who logged in recently
+     */
+    List<Staff> findByLastLoginAfter(LocalDateTime date);
+
+    /**
+     * Find staff who never logged in
+     */
+    List<Staff> findByLastLoginIsNull();
+
+    // ==================== CREATED BY QUERIES ====================
+
+    /**
+     * Find staff created by specific admin
+     */
+    List<Staff> findByCreatedBy(String createdBy);
+
+    /**
+     * Count staff created by specific admin
+     */
+    long countByCreatedBy(String createdBy);
+
+    // ==================== STATISTICS QUERIES ====================
+
+    /**
+     * Get total active staff count
+     */
+    @Query("SELECT COUNT(s) FROM Staff s WHERE s.status = 'ACTIVE'")
+    long countActiveStaff();
+
+    /**
+     * Get staff statistics by role
+     */
+    @Query("SELECT s.role, COUNT(s) FROM Staff s GROUP BY s.role")
+    List<Object[]> getStaffCountByRole();
+
+    /**
+     * Get staff statistics by status
+     */
+    @Query("SELECT s.status, COUNT(s) FROM Staff s GROUP BY s.status")
+    List<Object[]> getStaffCountByStatus();
+
+    // ==================== CUSTOM QUERIES ====================
+
+    /**
+     * Find staff with specific criteria
+     */
+    @Query("SELECT s FROM Staff s WHERE " +
+            "(:role IS NULL OR s.role = :role) AND " +
+            "(:status IS NULL OR s.status = :status) AND " +
+            "(:searchTerm IS NULL OR LOWER(s.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
+            "OR LOWER(s.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) " +
+            "OR LOWER(s.email) LIKE LOWER(CONCAT('%', :searchTerm, '%')))")
+    Page<Staff> findWithCriteria(
+            @Param("role") StaffRole role,
+            @Param("status") StaffStatus status,
+            @Param("searchTerm") String searchTerm,
+            Pageable pageable
+    );
+
+    /**
+     * Find staff needing reactivation (inactive for > 30 days)
+     */
+    @Query("SELECT s FROM Staff s WHERE s.status = 'INACTIVE' AND s.updatedAt < :date")
+    List<Staff> findStaffNeedingReactivation(@Param("date") LocalDateTime date);
+
+    /**
+     * Get recently created staff (last 7 days)
+     */
+    @Query("SELECT s FROM Staff s WHERE s.createdAt >= :weekAgo ORDER BY s.createdAt DESC")
+    List<Staff> getRecentlyCreatedStaff(@Param("weekAgo") LocalDateTime weekAgo);
 }
