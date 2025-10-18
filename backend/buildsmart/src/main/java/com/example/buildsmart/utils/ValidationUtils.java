@@ -11,7 +11,7 @@ public class ValidationUtils {
     private static final Pattern EMAIL_PATTERN = Pattern.compile("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
 
     //Phone no. validation pattern (SriLankan format)
-    private static final Pattern PHONE_PATTERN = Pattern.compile("^(?:\\+94|0)([0-9]{9})$\n");
+    private static final Pattern PHONE_PATTERN = Pattern.compile("^\\+?[1-9]\\d{1,14}$");
 
     //Name validation pattern (letters and spaces only, 2-50 characters)
     private static final Pattern NAME_PATTERN = Pattern.compile("^[A-Za-z\\s]{2,50}$");
