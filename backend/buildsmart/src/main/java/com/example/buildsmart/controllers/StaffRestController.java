@@ -1,270 +1,329 @@
 package com.example.buildsmart.controllers;
 
-import com.example.buildsmart.dto.CreateStaffRequest;
-import com.example.buildsmart.dto.StaffStatsResponse;
-import com.example.buildsmart.dto.UpdateStaffRequest;
-import com.example.buildsmart.model.Staff;
-import com.example.buildsmart.model.StaffRole;
-import com.example.buildsmart.model.StaffStatus;
+
+import com.example.buildsmart.dto.StaffDTO;
+import com.example.buildsmart.enums.StaffRole;
+import com.example.buildsmart.enums.StaffStatus;
 import com.example.buildsmart.services.StaffService;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
- * REST Controller for Staff Management
- * Provides API endpoints for React frontend integration
+ * Staff REST Controller
+ * Provides RESTful API endpoints for staff management
  */
 @RestController
-@RequestMapping("/api/staff")
-@CrossOrigin(origins = {"http://localhost:3000", "http://127.0.0.1:3000"})
+@RequestMapping("/api/v1/staff")
+@RequiredArgsConstructor
+@Slf4j
+@Tag(name = "Staff Management", description = "APIs for managing construction staff members")
+@CrossOrigin(origins = {"http://localhost:5713"})
+
 public class StaffRestController {
 
     private final StaffService staffService;
 
-    @Autowired
-    public StaffRestController(StaffService staffService){
-        this.staffService = staffService;
-        System.out.println("StaffRestController initialized - API endpoints ready");
-    }
+    // ==================== CREATE OPERATIONS ====================
 
-    /**
-     * GET /api/staff - Get all staff members
-     */
-    @GetMapping
-    public ResponseEntity<List<Staff>> getAllStaff(){
-        try{
-            List<Staff> staff = staffService.getAllStaff();
-            System.out.println("GET /api/staff - Returning " + staff.size() + " staff members");
-            return ResponseEntity.ok(staff);
-        } catch (Exception e) {
-            System.err.println("Error in getAllStaff: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
-     * GET /api/staff/{id} - Get staff member by ID
-     */
-    @GetMapping("/{id}")
-    public ResponseEntity<Staff> getStaffById(@PathVariable String id) {
-        try {
-            System.out.println("GET /api/staff/" + id);
-            Optional<Staff> staff = staffService.getStaffById(id);
-
-            if (staff.isPresent()) {
-                System.out.println("Found staff: " + staff.get().getFullName());
-                return ResponseEntity.ok(staff.get());
-            } else {
-                System.out.println("Staff not found with ID: " + id);
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
-            System.err.println("Error in getStaffById: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    /**
-     * POST /api/staff - Create new staff member
-     */
     @PostMapping
-    public ResponseEntity<?> createStaff(@RequestBody CreateStaffRequest request) {
-        try {
-            System.out.println("POST /api/staff - Creating: " + request.toString());
+    @Operation(summary = "Create new staff member", description = "Creates a new staff member in the system")
+    public ResponseEntity<ApiResponse<StaffDTO.Response>> createStaff(
+            @Valid @RequestBody StaffDTO.CreateRequest request) {
+        log.info("POST /api/v1/staff - Creating staff: {}", request.getEmail());
 
-            Staff newStaff = staffService.createStaff(
-                    request.getFirstName(),
-                    request.getLastName(),
-                    request.getEmail(),
-                    request.getPhoneNumber(),
-                    request.getRole(),
-                    request.getCreatedBy()
-            );
+        StaffDTO.Response response = staffService.createStaff(request);
 
-            System.out.println("Staff created successfully: " + newStaff.getStaffId() + " - " + newStaff.getFullName());
-            return ResponseEntity.status(HttpStatus.CREATED).body(newStaff);
-
-        } catch (IllegalArgumentException e) {
-            System.err.println("Validation error in createStaff: " + e.getMessage());
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
-        } catch (Exception e) {
-            System.err.println("Unexpected error in createStaff: " + e.getMessage());
-            e.printStackTrace();
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Internal server error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Staff created successfully", response));
     }
 
-    /**
-     * PUT /api/staff/{id} - Update existing staff member
-     */
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateStaff(@PathVariable String id,
-                                         @RequestBody UpdateStaffRequest request) {
-        try {
-            System.out.println("PUT /api/staff/" + id + " - Updating: " + request.toString());
+    @PostMapping("/bulk")
+    @Operation(summary = "Bulk create staff members", description = "Creates multiple staff members at once")
+    public ResponseEntity<ApiResponse<List<StaffDTO.Response>>> createBulkStaff(
+            @Valid @RequestBody List<StaffDTO.CreateRequest> requests) {
+        log.info("POST /api/v1/staff/bulk - Creating {} staff members", requests.size());
 
-            Staff updatedStaff = staffService.updateStaff(
-                    id,
-                    request.getFirstName(),
-                    request.getLastName(),
-                    request.getEmail(),
-                    request.getPhoneNumber(),
-                    request.getRole()
-            );
+        List<StaffDTO.Response> responses = staffService.createBulkStaff(requests);
 
-            System.out.println("Staff updated successfully: " + updatedStaff.getFullName());
-            return ResponseEntity.ok(updatedStaff);
-
-        } catch (IllegalArgumentException e) {
-            System.err.println("Error in updateStaff: " + e.getMessage());
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
-        } catch (Exception e) {
-            System.err.println("Unexpected error in updateStaff: " + e.getMessage());
-            e.printStackTrace();
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Internal server error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Bulk staff created successfully", responses));
     }
 
-    /**
-     * DELETE /api/staff/{id} - Delete staff member
-     */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteStaff(@PathVariable String id) {
-        try {
-            System.out.println("DELETE /api/staff/" + id);
+    // ==================== READ OPERATIONS ====================
 
-            boolean deleted = staffService.deleteStaff(id);
-            if (deleted) {
-                System.out.println("Staff deleted successfully: " + id);
-                Map<String, String> response = new HashMap<>();
-                response.put("message", "Staff deleted successfully");
-                return ResponseEntity.ok(response);
-            } else {
-                System.out.println("Staff not found for deletion: " + id);
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
-            System.err.println("Error in deleteStaff: " + e.getMessage());
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Internal server error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
+    @GetMapping("/{id}")
+    @Operation(summary = "Get staff by ID", description = "Retrieves a staff member by database ID")
+    public ResponseEntity<ApiResponse<StaffDTO.Response>> getStaffById(
+            @Parameter(description = "Database ID of the staff") @PathVariable Long id) {
+        log.info("GET /api/v1/staff/{}", id);
+
+        StaffDTO.Response response = staffService.getStaffById(id);
+
+        return ResponseEntity.ok(ApiResponse.success("Staff retrieved successfully", response));
     }
 
-    /**
-     * GET /api/staff/search - Search staff with filters
-     */
-    @GetMapping("/search")
-    public ResponseEntity<List<Staff>> searchStaff(
-            @RequestParam(required = false) String firstName,
-            @RequestParam(required = false) String lastName,
-            @RequestParam(required = false) StaffRole role,
-            @RequestParam(required = false) StaffStatus status) {
+    @GetMapping("/staff-id/{staffId}")
+    @Operation(summary = "Get staff by Staff ID", description = "Retrieves a staff member by their unique staff ID")
+    public ResponseEntity<ApiResponse<StaffDTO.Response>> getStaffByStaffId(
+            @Parameter(description = "Unique staff ID") @PathVariable String staffId) {
+        log.info("GET /api/v1/staff/staff-id/{}", staffId);
 
-        try {
-            System.out.println("GET /api/staff/search - firstName: " + firstName +
-                    ", lastName: " + lastName + ", role: " + role + ", status: " + status);
+        StaffDTO.Response response = staffService.getStaffByStaffId(staffId);
 
-            List<Staff> results = staffService.searchStaff(firstName, lastName, role, status);
-
-            System.out.println("Search completed - Found " + results.size() + " results");
-            return ResponseEntity.ok(results);
-        } catch (Exception e) {
-            System.err.println("Error in searchStaff: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        return ResponseEntity.ok(ApiResponse.success("Staff retrieved successfully", response));
     }
 
-    /**
-     * GET /api/staff/stats - Get staff statistics
-     */
-    @GetMapping("/stats")
-    public ResponseEntity<StaffStatsResponse> getStaffStats() {
-        try {
-            System.out.println("GET /api/staff/stats");
+    @GetMapping
+    @Operation(summary = "Get all staff", description = "Retrieves all staff members with pagination")
+    public ResponseEntity<ApiResponse<Page<StaffDTO.Response>>> getAllStaff(
+            @Parameter(description = "Page number (0-indexed)") @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Page size") @RequestParam(defaultValue = "20") int size,
+            @Parameter(description = "Sort by field") @RequestParam(defaultValue = "firstName") String sortBy,
+            @Parameter(description = "Sort direction (asc/desc)") @RequestParam(defaultValue = "asc") String direction) {
+        log.info("GET /api/v1/staff - page: {}, size: {}", page, size);
 
-            StaffStatsResponse stats = staffService.getStaffStatistics();
+        Page<StaffDTO.Response> response = staffService.getAllStaff(page, size, sortBy, direction);
 
-            System.out.println("Stats retrieved: " + stats.toString());
-            return ResponseEntity.ok(stats);
-        } catch (Exception e) {
-            System.err.println("Error in getStaffStats: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        return ResponseEntity.ok(ApiResponse.success("Staff list retrieved successfully", response));
     }
 
-    /**
-     * GET /api/staff/role/{role} - Get staff by role
-     */
+    @GetMapping("/active")
+    @Operation(summary = "Get active staff", description = "Retrieves all active staff members")
+    public ResponseEntity<ApiResponse<List<StaffDTO.Response>>> getActiveStaff() {
+        log.info("GET /api/v1/staff/active");
+
+        List<StaffDTO.Response> response = staffService.getActiveStaff();
+
+        return ResponseEntity.ok(ApiResponse.success("Active staff retrieved successfully", response));
+    }
+
     @GetMapping("/role/{role}")
-    public ResponseEntity<List<Staff>> getStaffByRole(@PathVariable StaffRole role) {
-        try {
-            System.out.println("GET /api/staff/role/" + role);
+    @Operation(summary = "Get staff by role", description = "Retrieves staff members by their role")
+    public ResponseEntity<ApiResponse<List<StaffDTO.Response>>> getStaffByRole(
+            @Parameter(description = "Staff role") @PathVariable StaffRole role) {
+        log.info("GET /api/v1/staff/role/{}", role);
 
-            List<Staff> staffByRole = staffService.getStaffByRole(role);
+        List<StaffDTO.Response> response = staffService.getStaffByRole(role);
 
-            System.out.println("Found " + staffByRole.size() + " staff members with role: " + role);
-            return ResponseEntity.ok(staffByRole);
-        } catch (Exception e) {
-            System.err.println("Error in getStaffByRole: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        return ResponseEntity.ok(ApiResponse.success("Staff by role retrieved successfully", response));
     }
 
-    /**
-     * PUT /api/staff/{id}/status - Change staff status
-     */
-    @PutMapping("/{id}/status")
-    public ResponseEntity<?> changeStaffStatus(@PathVariable String id,
-                                               @RequestParam StaffStatus status) {
-        try {
-            System.out.println("PUT /api/staff/" + id + "/status - New status: " + status);
+    @GetMapping("/status/{status}")
+    @Operation(summary = "Get staff by status", description = "Retrieves staff members by their status")
+    public ResponseEntity<ApiResponse<List<StaffDTO.Response>>> getStaffByStatus(
+            @Parameter(description = "Staff status") @PathVariable StaffStatus status) {
+        log.info("GET /api/v1/staff/status/{}", status);
 
-            Staff updatedStaff = staffService.changeStaffStatus(id, status);
+        List<StaffDTO.Response> response = staffService.getStaffByStatus(status);
 
-            System.out.println("Status changed successfully for: " + updatedStaff.getFullName());
-            return ResponseEntity.ok(updatedStaff);
-        } catch (IllegalArgumentException e) {
-            System.err.println("Error in changeStaffStatus: " + e.getMessage());
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", e.getMessage());
-            return ResponseEntity.badRequest().body(errorResponse);
-        } catch (Exception e) {
-            System.err.println("Unexpected error in changeStaffStatus: " + e.getMessage());
-            Map<String, String> errorResponse = new HashMap<>();
-            errorResponse.put("error", "Internal server error: " + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
-        }
+        return ResponseEntity.ok(ApiResponse.success("Staff by status retrieved successfully", response));
     }
 
-    /**
-     * Health check endpoint
-     */
-    @GetMapping("/health")
-    public ResponseEntity<Map<String, Object>> healthCheck() {
-        Map<String, Object> health = new HashMap<>();
-        health.put("status", "UP");
-        health.put("timestamp", System.currentTimeMillis());
-        health.put("totalStaff", staffService.getTotalStaffCount());
-        health.put("service", "Staff Management API");
-        health.put("version", "1.0.0 - First 50%");
+    @GetMapping("/search")
+    @Operation(summary = "Search staff", description = "Searches staff by various criteria")
+    public ResponseEntity<ApiResponse<Page<StaffDTO.Response>>> searchStaff(
+            @RequestParam(required = false) String searchTerm,
+            @RequestParam(required = false) StaffRole role,
+            @RequestParam(required = false) StaffStatus status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "firstName") String sortBy,
+            @RequestParam(defaultValue = "asc") String sortDirection) {
+        log.info("GET /api/v1/staff/search - term: {}", searchTerm);
 
-        System.out.println("Health check performed - System is UP");
-        return ResponseEntity.ok(health);
+        StaffDTO.SearchCriteria criteria = StaffDTO.SearchCriteria.builder()
+                .searchTerm(searchTerm)
+                .role(role)
+                .status(status)
+                .page(page)
+                .size(size)
+                .sortBy(sortBy)
+                .sortDirection(sortDirection)
+                .build();
+
+        Page<StaffDTO.Response> response = staffService.searchStaff(criteria);
+
+        return ResponseEntity.ok(ApiResponse.success("Search results retrieved successfully", response));
+    }
+
+    @GetMapping("/search/name")
+    @Operation(summary = "Search staff by name", description = "Searches staff by first and/or last name")
+    public ResponseEntity<ApiResponse<List<StaffDTO.Response>>> searchStaffByName(
+            @RequestParam(required = false) String firstName,
+            @RequestParam(required = false) String lastName) {
+        log.info("GET /api/v1/staff/search/name - firstName: {}, lastName: {}", firstName, lastName);
+
+        List<StaffDTO.Response> response = staffService.searchStaffByName(firstName, lastName);
+
+        return ResponseEntity.ok(ApiResponse.success("Search results retrieved successfully", response));
+    }
+
+    // ==================== UPDATE OPERATIONS ====================
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Update staff", description = "Updates staff member information")
+    public ResponseEntity<ApiResponse<StaffDTO.Response>> updateStaff(
+            @Parameter(description = "Database ID of the staff") @PathVariable Long id,
+            @Valid @RequestBody StaffDTO.UpdateRequest request) {
+        log.info("PUT /api/v1/staff/{}", id);
+
+        StaffDTO.Response response = staffService.updateStaff(id, request);
+
+        return ResponseEntity.ok(ApiResponse.success("Staff updated successfully", response));
+    }
+
+    @PatchMapping("/{id}/status")
+    @Operation(summary = "Change staff status", description = "Changes the status of a staff member")
+    public ResponseEntity<ApiResponse<StaffDTO.Response>> changeStaffStatus(
+            @Parameter(description = "Database ID of the staff") @PathVariable Long id,
+            @Valid @RequestBody StaffDTO.StatusChangeRequest request) {
+        log.info("PATCH /api/v1/staff/{}/status", id);
+
+        StaffDTO.Response response = staffService.changeStaffStatus(id, request);
+
+        return ResponseEntity.ok(ApiResponse.success("Staff status changed successfully", response));
+    }
+
+    @PatchMapping("/staff-id/{staffId}/login")
+    @Operation(summary = "Update last login", description = "Updates the last login timestamp for a staff member")
+    public ResponseEntity<ApiResponse<Void>> updateLastLogin(
+            @Parameter(description = "Unique staff ID") @PathVariable String staffId) {
+        log.info("PATCH /api/v1/staff/staff-id/{}/login", staffId);
+
+        staffService.updateLastLogin(staffId);
+
+        return ResponseEntity.ok(ApiResponse.success("Last login updated successfully", null));
+    }
+
+    // ==================== DELETE OPERATIONS ====================
+
+    @DeleteMapping("/{id}/deactivate")
+    @Operation(summary = "Deactivate staff", description = "Soft deletes a staff member (can be reactivated)")
+    public ResponseEntity<ApiResponse<Void>> deactivateStaff(
+            @Parameter(description = "Database ID of the staff") @PathVariable Long id,
+            @RequestParam(required = false) String deactivatedBy) {
+        log.info("DELETE /api/v1/staff/{}/deactivate", id);
+
+        staffService.deactivateStaff(id, deactivatedBy != null ? deactivatedBy : "SYSTEM");
+
+        return ResponseEntity.ok(ApiResponse.success("Staff deactivated successfully", null));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Delete staff permanently", description = "Permanently deletes a staff member")
+    public ResponseEntity<ApiResponse<Void>> deleteStaff(
+            @Parameter(description = "Database ID of the staff") @PathVariable Long id,
+            @RequestParam(required = false) String deletedBy) {
+        log.info("DELETE /api/v1/staff/{}", id);
+
+        staffService.deleteStaff(id, deletedBy != null ? deletedBy : "SYSTEM");
+
+        return ResponseEntity.ok(ApiResponse.success("Staff deleted successfully", null));
+    }
+
+    @PostMapping("/bulk-deactivate")
+    @Operation(summary = "Bulk deactivate staff", description = "Deactivates multiple staff members at once")
+    public ResponseEntity<ApiResponse<Map<String, Integer>>> bulkDeactivateStaff(
+            @RequestBody List<Long> ids,
+            @RequestParam(required = false) String deactivatedBy) {
+        log.info("POST /api/v1/staff/bulk-deactivate - {} staff members", ids.size());
+
+        int count = staffService.bulkDeactivateStaff(ids, deactivatedBy != null ? deactivatedBy : "SYSTEM");
+
+        return ResponseEntity.ok(ApiResponse.success(
+                "Bulk deactivation completed",
+                Map.of("deactivatedCount", count, "totalRequested", ids.size())
+        ));
+    }
+
+    // ==================== STATISTICS ====================
+
+    @GetMapping("/statistics")
+    @Operation(summary = "Get staff statistics", description = "Retrieves comprehensive staff statistics")
+    public ResponseEntity<ApiResponse<StaffDTO.Statistics>> getStatistics() {
+        log.info("GET /api/v1/staff/statistics");
+
+        StaffDTO.Statistics response = staffService.getStatistics();
+
+        return ResponseEntity.ok(ApiResponse.success("Statistics retrieved successfully", response));
+    }
+
+    // ==================== UTILITY ENDPOINTS ====================
+
+    @GetMapping("/roles")
+    @Operation(summary = "Get all roles", description = "Retrieves all available staff roles")
+    public ResponseEntity<ApiResponse<List<Map<String, String>>>> getAllRoles() {
+        log.info("GET /api/v1/staff/roles");
+
+        List<Map<String, String>> roles = java.util.Arrays.stream(StaffRole.values())
+                .map(role -> Map.of(
+                        "name", role.name(),
+                        "displayName", role.getDisplayName(),
+                        "description", role.getDescription()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(ApiResponse.success("Roles retrieved successfully", roles));
+    }
+
+    @GetMapping("/statuses")
+    @Operation(summary = "Get all statuses", description = "Retrieves all available staff statuses")
+    public ResponseEntity<ApiResponse<List<Map<String, String>>>> getAllStatuses() {
+        log.info("GET /api/v1/staff/statuses");
+
+        List<Map<String, String>> statuses = java.util.Arrays.stream(StaffStatus.values())
+                .map(status -> Map.of(
+                        "name", status.name(),
+                        "displayName", status.getDisplayName(),
+                        "description", status.getDescription()
+                ))
+                .toList();
+
+        return ResponseEntity.ok(ApiResponse.success("Statuses retrieved successfully", statuses));
+    }
+
+    // ==================== API RESPONSE WRAPPER ====================
+
+    /**
+     * Standard API Response wrapper
+     */
+    @lombok.Data
+    @lombok.AllArgsConstructor
+    @lombok.NoArgsConstructor
+    @lombok.Builder
+    public static class ApiResponse<T> {
+        private boolean success;
+        private String message;
+        private T data;
+        private Long timestamp;
+
+        public static <T> ApiResponse<T> success(String message, T data) {
+            return ApiResponse.<T>builder()
+                    .success(true)
+                    .message(message)
+                    .data(data)
+                    .timestamp(System.currentTimeMillis())
+                    .build();
+        }
+
+        public static <T> ApiResponse<T> error(String message) {
+            return ApiResponse.<T>builder()
+                    .success(false)
+                    .message(message)
+                    .data(null)
+                    .timestamp(System.currentTimeMillis())
+                    .build();
+        }
     }
 }
