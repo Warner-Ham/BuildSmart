@@ -14,6 +14,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 /**
  * Data Transfer Objects for Staff API
@@ -37,6 +38,14 @@ public class StaffDTO {
         @Size(min = 2, max = 50, message = "Last name must be between 2 and 50 characters")
         @Pattern(regexp = "^[A-Za-z\\s]+$", message = "Last name must contain only letters")
         private String lastName;
+
+        @NotBlank(message = "Username is required")
+        @Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters")
+        private String username;
+
+        @NotBlank(message = "Password is required")
+        @Size(min = 6, max = 50, message = "Password must be between 6 and 50 characters")
+        private String password;
 
         @NotBlank(message = "Email is required")
         @Email(message = "Email must be valid")
@@ -79,14 +88,16 @@ public class StaffDTO {
         private String updatedBy;
     }
 
+
     /**
      * Request DTO for changing staff status
      */
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
+    @Builder
     public static class StatusChangeRequest {
-        @NotNull(message = "Status is required")
+        @NotNull(message = "New Status is required")
         private StaffStatus newStatus;
 
         private String reason;
@@ -106,12 +117,16 @@ public class StaffDTO {
         private String staffId;
         private String firstName;
         private String lastName;
+        private String username;
         private String fullName;
         private String email;
         private String phoneNumber;
         private StaffRole role;
         private StaffStatus status;
+        private Boolean accountLocked;
+        private Integer failedLoginAttempts;
         private String createdBy;
+        private String updatedBy;
 
         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
         private LocalDateTime createdAt;
@@ -124,7 +139,7 @@ public class StaffDTO {
     }
 
     /**
-     * Summary DTO for staff (minimal info)
+     * Summary DTO for staff
      */
     @Data
     @NoArgsConstructor
@@ -151,8 +166,8 @@ public class StaffDTO {
         private long inactiveStaff;
         private long suspendedStaff;
         private long pendingActivation;
-        private java.util.Map<StaffRole, Long> staffByRole;
-        private java.util.Map<StaffStatus, Long> staffByStatus;
+        private Map<StaffRole, Long> staffByRole;
+        private Map<StaffStatus, Long> staffByStatus;
     }
 
     /**
@@ -164,6 +179,10 @@ public class StaffDTO {
     @Builder
     public static class SearchCriteria {
         private String searchTerm;
+        private String firstName;
+        private String lastName;
+        private String email;
+        private String phoneNumber;
         private StaffRole role;
         private StaffStatus status;
         private LocalDateTime createdAfter;
