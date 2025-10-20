@@ -15,13 +15,10 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Staff Repository - Spring Data JPA Repository
- * Provides database operations for Staff entity
+ * Staff Repository - Provides database operations for Staff entity
  */
 @Repository
 public interface StaffRepository extends JpaRepository<Staff, Long> {
-
-    // ==================== FIND BY UNIQUE FIELDS ====================
 
     /**
      * Find staff by staff ID
@@ -44,7 +41,7 @@ public interface StaffRepository extends JpaRepository<Staff, Long> {
     Optional<Staff> findByUsername(String username);
 
     /**
-     * Check if username exists
+     * Check if a username exists
      */
     boolean existsByUsername(String username);
 
@@ -53,7 +50,6 @@ public interface StaffRepository extends JpaRepository<Staff, Long> {
      */
     boolean existsByStaffId(String staffId);
 
-    // ==================== FIND BY ROLE ====================
 
     /**
      * Find all staff by role
@@ -70,7 +66,6 @@ public interface StaffRepository extends JpaRepository<Staff, Long> {
      */
     long countByRole(StaffRole role);
 
-    // ==================== FIND BY STATUS ====================
 
     /**
      * Find all staff by status
@@ -87,7 +82,6 @@ public interface StaffRepository extends JpaRepository<Staff, Long> {
      */
     long countByStatus(StaffStatus status);
 
-    // ==================== FIND BY ROLE AND STATUS ====================
 
     /**
      * Find staff by role and status
@@ -103,12 +97,12 @@ public interface StaffRepository extends JpaRepository<Staff, Long> {
     // ==================== SEARCH BY NAME ====================
 
     /**
-     * Find staff by first name (case insensitive)
+     * Find staff by first name
      */
     List<Staff> findByFirstNameContainingIgnoreCase(String firstName);
 
     /**
-     * Find staff by last name (case insensitive)
+     * Find staff by last name
      */
     List<Staff> findByLastNameContainingIgnoreCase(String lastName);
 
@@ -132,41 +126,6 @@ public interface StaffRepository extends JpaRepository<Staff, Long> {
             @Param("lastName") String lastName
     );
 
-    // ==================== DATE-BASED QUERIES ====================
-
-    /**
-     * Find staff created after specific date
-     */
-    List<Staff> findByCreatedAtAfter(LocalDateTime date);
-
-    /**
-     * Find staff created between dates
-     */
-    List<Staff> findByCreatedAtBetween(LocalDateTime startDate, LocalDateTime endDate);
-
-    /**
-     * Find staff who logged in recently
-     */
-    List<Staff> findByLastLoginAfter(LocalDateTime date);
-
-    /**
-     * Find staff who never logged in
-     */
-    List<Staff> findByLastLoginIsNull();
-
-    // ==================== CREATED BY QUERIES ====================
-
-    /**
-     * Find staff created by specific admin
-     */
-    List<Staff> findByCreatedBy(String createdBy);
-
-    /**
-     * Count staff created by specific admin
-     */
-    long countByCreatedBy(String createdBy);
-
-    // ==================== STATISTICS QUERIES ====================
 
     /**
      * Get total active staff count
@@ -186,7 +145,7 @@ public interface StaffRepository extends JpaRepository<Staff, Long> {
     @Query("SELECT s.status, COUNT(s) FROM Staff s GROUP BY s.status")
     List<Object[]> getStaffCountByStatus();
 
-    // ==================== CUSTOM QUERIES ====================
+
 
     /**
      * Find staff with specific criteria
