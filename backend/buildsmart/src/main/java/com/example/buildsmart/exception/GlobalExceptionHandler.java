@@ -13,8 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Global exception Handler
- * Handles all exceptions and returns consistent error responses
+ * Global exception Handler - Handles all exceptions and returns consistent error responses
  */
 @RestControllerAdvice
 @Slf4j
@@ -41,6 +40,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateEmailException.class)
     public ResponseEntity<StaffRestController.ApiResponse<Object>> handleDuplicateEmailException(DuplicateEmailException ex) {
         log.error("Duplicate email: {}", ex.getMessage());
+
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(StaffRestController.ApiResponse.builder()
+                        .success(false)
+                        .message(ex.getMessage())
+                        .timestamp(System.currentTimeMillis())
+                        .build());
+    }
+
+    /**
+     * Handle DuplicateUsernameException
+     */
+    @ExceptionHandler(DuplicateUsernameException.class)
+    public ResponseEntity<StaffRestController.ApiResponse<Object>> handleDuplicateUsernameException(DuplicateUsernameException ex) {
+        log.error("Duplicate username: {}", ex.getMessage());
 
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(StaffRestController.ApiResponse.builder()
