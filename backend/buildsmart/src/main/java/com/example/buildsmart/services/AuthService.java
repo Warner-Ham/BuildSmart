@@ -33,7 +33,7 @@ public class AuthService {
         Staff staff = staffRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new BadCredentialsException("Invalid username or password"));
 
-        // Check if account is locked
+        // Check if an account is locked
         if (staff.getAccountLocked()) {
             if (isAccountUnlockable(staff)) {
                 unlockAccount(staff);
@@ -42,7 +42,7 @@ public class AuthService {
             }
         }
 
-        // Check if account is active
+        // Check if an account is active
         if (!staff.isActive()) {
             throw new BadCredentialsException("Account is not active");
         }
@@ -74,7 +74,7 @@ public class AuthService {
     }
 
     public AuthDTO.RegisterResponse register(AuthDTO.RegisterRequest request) {
-        // Check if username already exists
+        // Check if a username already exists
         if (staffRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new IllegalArgumentException("Username already exists");
         }
