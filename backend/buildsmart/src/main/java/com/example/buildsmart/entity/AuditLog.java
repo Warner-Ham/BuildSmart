@@ -9,7 +9,6 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 /**
  * AuditLog Entity - Tracks all system activities
- * Provides complete traceability for compliance
  */
 @Entity
 @Table(name = "audit_log", indexes = {
