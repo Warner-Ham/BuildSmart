@@ -31,7 +31,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt;
         final String username;
 
-        // Check if Authorization header exists and starts with "Bearer "
+        // Check if the Authorization header exists and starts with "Bearer"
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
@@ -44,7 +44,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // Extract username from token
             username = jwtUtil.extractUsername(jwt);
 
-            // If username is valid and user is not authenticated yet
+            // If the username is valid and the user is not authenticated yet
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
                 // Validate token
@@ -52,7 +52,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // Extract role from token
                     String role = jwtUtil.extractRole(jwt);
 
-                    // Create authentication token
+                    // Create an authentication token
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             username,
                             null,
@@ -61,7 +61,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                    // Set authentication in security context
+                    // Set authentication in a security context
                     SecurityContextHolder.getContext().setAuthentication(authToken);
                 }
             }
