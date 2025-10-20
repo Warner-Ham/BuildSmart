@@ -11,7 +11,6 @@ import io.swagger.v3.oas.models.info.License;
 
 /**
  * BuildSmart Staff Management Application
- * Spring Boot main application class
  */
 @SpringBootApplication
 public class StaffManagementApplication {
