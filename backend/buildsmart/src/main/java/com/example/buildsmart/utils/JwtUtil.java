@@ -85,7 +85,7 @@ public class JwtUtil {
     }
 
     /**
-     * Extract all claims from token
+     * Extract all claims from a token
      */
     private Claims extractAllClaims(String token) {
         return Jwts.parserBuilder()
@@ -96,22 +96,15 @@ public class JwtUtil {
     }
 
     /**
-     * Check if token is expired
+     * Check if the token is expired
      */
     private Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
-    /**
-     * Validate token
-     */
-    public Boolean validateToken(String token, UserDetails userDetails) {
-        final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
-    }
 
     /**
-     * Validate token (simple version)
+     * Validate token
      */
     public Boolean validateToken(String token) {
         try {
