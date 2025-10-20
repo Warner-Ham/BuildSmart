@@ -12,8 +12,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * AuditLog Repository - Spring Data JPA Repository
- * Provides database operations for audit trail
+ * AuditLog Repository - Provides database operations for audit trail
  */
 @Repository
 public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {

@@ -1,5 +1,7 @@
 package com.example.buildsmart.utils;
 
+import lombok.Getter;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -7,7 +9,6 @@ import java.util.stream.Collectors;
 
 /**
  * Audit Logger for tracking all system activities
- * Provides full traceability for accountability
  */
 public class AuditLogger {
         private final List<AuditEntry> auditLog;
@@ -27,7 +28,7 @@ public class AuditLogger {
         }
 
         /**
-         * Get audit trail for specific staff
+         * Get an audit trail for specific staff
          */
         public List<String> getAuditTrail(String staffId) {
             return auditLog.stream()
@@ -68,6 +69,7 @@ public class AuditLogger {
         /**
          * Inner class representing a single audit entry
          */
+        @Getter
         private class AuditEntry {
             private final String action;
             private final String staffId;
@@ -82,12 +84,6 @@ public class AuditLogger {
                 this.performedBy = performedBy;
                 this.timestamp = LocalDateTime.now();
             }
-
-            public String getAction() { return action; }
-            public String getStaffId() { return staffId; }
-            public String getDescription() { return description; }
-            public String getPerformedBy() { return performedBy; }
-            public LocalDateTime getTimestamp() { return timestamp; }
 
             @Override
             public String toString() {
