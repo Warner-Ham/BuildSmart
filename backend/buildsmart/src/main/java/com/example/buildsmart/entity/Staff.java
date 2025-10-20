@@ -4,10 +4,6 @@ package com.example.buildsmart.entity;
 import com.example.buildsmart.enums.StaffRole;
 import com.example.buildsmart.enums.StaffStatus;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -74,6 +70,9 @@ public class Staff {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "updated_by", length = 50)
+    private String updatedBy;
 
     @Column(name = "last_login")
     private LocalDateTime lastLogin;
