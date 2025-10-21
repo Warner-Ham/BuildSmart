@@ -1,13 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { staffAPI } from '../services/api';
-import { UserPlus, Save, X } from 'lucide-react';
+import { UserPlus, Save, X, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const CreateStaffForm = ({ onSuccess }) => {
     const queryClient = useQueryClient();
-    const { register, handleSubmit, formState: { errors }, reset } = useForm();
+    const { register, handleSubmit, formState: { errors }, reset, watch } = useForm();
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     const { data: rolesData } = useQuery('roles', staffAPI.getAllRoles);
 
@@ -24,25 +26,29 @@ const CreateStaffForm = ({ onSuccess }) => {
     });
 
     const onSubmit = (data) => {
+        // Remove confirmPassword before sending to API
+        const { confirmPassword, ...staffData } = data;
+
         createMutation.mutate({
-            ...data,
+            ...staffData,
             createdBy: 'ADMIN', // In production, get from auth context
         });
     };
 
     return (
-        <div className="max-w-3xl mx-auto">
-            <div className="mb-8">
+        <div className="space-y-8 max-w-3xl mx-auto animate-fade-in-up">
+            <div className="mb-4">
                 <div className="flex items-center space-x-3 mb-2">
-                    <div className="bg-gradient-to-br from-blue-600 to-blue-700 p-3 rounded-xl">
-                        <UserPlus className="text-white" size={24} />
+                    <div className="bg-primary-100 p-3 rounded-xl">
+                        <UserPlus className="text-primary-700" size={24} />
                     </div>
-                    <h2 className="text-3xl font-bold text-gray-900">Add New Staff Member</h2>
+                    <h2 className="section-title">Add New Staff Member</h2>
                 </div>
-                <p className="text-gray-600">Fill in the details to create a new staff account</p>
+                <p className="text-primary-600 font-medium">Fill in the details to create a new staff account</p>
             </div>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div className="card-buildsmart">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                 {/* Personal Information */}
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -99,10 +105,116 @@ const CreateStaffForm = ({ onSuccess }) => {
                     </div>
                 </div>
 
+                {/* Account Credentials */}
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-6 border-2 border-orange-200">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                        <span className="bg-orange-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">2</span>
+                        Account Credentials
+                    </h3>
+
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Username <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                {...register('username', {
+                                    required: 'Username is required',
+                                    minLength: {
+                                        value: 3,
+                                        message: 'Username must be at least 3 characters'
+                                    },
+                                    maxLength: {
+                                        value: 20,
+                                        message: 'Username must not exceed 20 characters'
+                                    },
+                                    pattern: {
+                                        value: /^[a-zA-Z0-9_]+$/,
+                                        message: 'Username can only contain letters, numbers, and underscores'
+                                    }
+                                })}
+                                className={`w-full px-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                                    errors.username ? 'border-red-500' : 'border-gray-300'
+                                }`}
+                                placeholder="Enter username"
+                            />
+                            {errors.username && (
+                                <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Password <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    {...register('password', {
+                                        required: 'Password is required',
+                                        minLength: {
+                                            value: 6,
+                                            message: 'Password must be at least 6 characters'
+                                        },
+                                        maxLength: {
+                                            value: 50,
+                                            message: 'Password must not exceed 50 characters'
+                                        }
+                                    })}
+                                    className={`w-full px-4 py-3 pr-12 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                                        errors.password ? 'border-red-500' : 'border-gray-300'
+                                    }`}
+                                    placeholder="Enter password"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
+                            {errors.password && (
+                                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Confirm Password <span className="text-red-500">*</span>
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type={showConfirmPassword ? 'text' : 'password'}
+                                    {...register('confirmPassword', {
+                                        required: 'Please confirm password',
+                                        validate: value => value === watch('password') || 'Passwords do not match'
+                                    })}
+                                    className={`w-full px-4 py-3 pr-12 border-2 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors ${
+                                        errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                                    }`}
+                                    placeholder="Confirm password"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                >
+                                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                                </button>
+                            </div>
+                            {errors.confirmPassword && (
+                                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
                 {/* Contact Information */}
                 <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border-2 border-green-200">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <span className="bg-green-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">2</span>
+                        <span className="bg-green-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">3</span>
                         Contact Information
                     </h3>
 
@@ -158,7 +270,7 @@ const CreateStaffForm = ({ onSuccess }) => {
                 {/* Role Selection */}
                 <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <span className="bg-purple-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">3</span>
+                        <span className="bg-purple-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">4</span>
                         Role Assignment
                     </h3>
 
@@ -214,13 +326,16 @@ const CreateStaffForm = ({ onSuccess }) => {
                         Clear Form
                     </button>
                 </div>
-            </form>
+                </form>
+            </div>
 
             {/* Info Box */}
             <div className="mt-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-xl">
                 <h4 className="font-semibold text-blue-900 mb-2">📋 Important Notes:</h4>
                 <ul className="text-sm text-blue-800 space-y-1">
                     <li>• All fields marked with <span className="text-red-500">*</span> are required</li>
+                    <li>• Username must be unique and 3-20 characters long</li>
+                    <li>• Password must be at least 6 characters long</li>
                     <li>• Email must be unique in the system</li>
                     <li>• Phone number should be in international format</li>
                     <li>• Staff will be created with ACTIVE status by default</li>

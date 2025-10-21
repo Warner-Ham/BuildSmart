@@ -17,6 +17,16 @@ const apiClient = axios.create({
 // Request interceptor
 apiClient.interceptors.request.use(
     (config) => {
+        // Allow disabling auth in development by setting VITE_DISABLE_AUTH=true
+        const disableAuth = import.meta.env.VITE_DISABLE_AUTH === 'true';
+        if (disableAuth) {
+            // Do not attach Authorization header when auth is disabled for dev/testing
+            // Useful when backend is protected but you want to iterate on UI without a token
+            // eslint-disable-next-line no-console
+            console.warn('VITE_DISABLE_AUTH is true — skipping Authorization header');
+            return config;
+        }
+
         const token = localStorage.getItem('token');
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
@@ -32,11 +42,28 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
     (response) => response.data,
     (error) => {
-        if (error.response?.status === 401) {
-            // Token expired or invalid - redirect to login
+        const status = error.response?.status;
+
+        // If Unauthorized, clear storage and redirect to login
+        if (status === 401) {
             localStorage.clear();
             window.location.href = '/';
         }
+
+        // Dev helper: if backend returns 403 (forbidden) and developer has explicitly disabled auth,
+        // retry the request once without Authorization header. This helps iterate on UI when
+        // the backend permits anonymous reads in development.
+        const disableAuth = import.meta.env.VITE_DISABLE_AUTH === 'true';
+        const config = error.config || {};
+        if (status === 403 && disableAuth && !config._retry) {
+            config._retry = true;
+            if (config.headers) {
+                // remove Authorization header and retry
+                delete config.headers.Authorization;
+            }
+            return apiClient.request(config).then((resp) => resp).catch((err) => Promise.reject(err));
+        }
+
         const message = error.response?.data?.message || error.message || 'An error occurred';
         return Promise.reject(new Error(message));
     }

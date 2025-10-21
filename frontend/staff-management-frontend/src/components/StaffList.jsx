@@ -3,7 +3,7 @@ import { useQuery } from 'react-query';
 import { staffAPI } from '../services/api';
 import {
     ChevronLeft, ChevronRight, Search, Filter,
-    Mail, Phone, UserCircle, Eye, Trash2, Edit
+    Mail, Phone, UserCircle, Eye, Trash2, Edit, RefreshCw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -14,10 +14,27 @@ const StaffList = ({ onStaffSelect }) => {
     const [direction, setDirection] = useState('asc');
     const [filterRole, setFilterRole] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+
+    // Use search API when filters are applied, otherwise use getAllStaff
+    const shouldUseSearch = filterRole || filterStatus || searchTerm;
 
     const { data, isLoading, error, refetch } = useQuery(
-        ['staff', page, size, sortBy, direction],
-        () => staffAPI.getAllStaff({ page, size, sortBy, direction }),
+        ['staff', page, size, sortBy, direction, filterRole, filterStatus, searchTerm],
+        () => {
+            if (shouldUseSearch) {
+                return staffAPI.searchStaff({
+                    searchTerm,
+                    role: filterRole,
+                    status: filterStatus,
+                    page,
+                    size,
+                    sortBy,
+                    sortDirection: direction
+                });
+            }
+            return staffAPI.getAllStaff({ page, size, sortBy, direction });
+        },
         { keepPreviousData: true }
     );
 
@@ -27,13 +44,21 @@ const StaffList = ({ onStaffSelect }) => {
     const handleDelete = async (id, staffName) => {
         if (window.confirm(`Are you sure you want to deactivate ${staffName}?`)) {
             try {
-                await staffAPI.deactivateStaff(id, 'ADMIN');
+                const currentUser = localStorage.getItem('username') || 'ADMIN';
+                await staffAPI.deactivateStaff(id, currentUser);
                 toast.success('Staff deactivated successfully');
                 refetch();
             } catch (error) {
-                toast.error('Failed to deactivate staff');
+                toast.error(error.message || 'Failed to deactivate staff');
             }
         }
+    };
+
+    const handleClearFilters = () => {
+        setFilterRole('');
+        setFilterStatus('');
+        setSearchTerm('');
+        setPage(0);
     };
 
     const getStatusBadge = (status) => {
@@ -43,18 +68,32 @@ const StaffList = ({ onStaffSelect }) => {
             SUSPENDED: 'bg-red-100 text-red-800 border-red-200',
             PENDING_ACTIVATION: 'bg-yellow-100 text-yellow-800 border-yellow-200',
         };
-        return colors[status] || 'bg-gray-100 text-gray-800';
+        return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
     };
 
     const getRoleBadge = (role) => {
         const colors = {
             ADMIN: 'bg-purple-100 text-purple-800',
+            MANAGER: 'bg-blue-100 text-blue-800',
+            SUPERVISOR: 'bg-indigo-100 text-indigo-800',
+            STAFF: 'bg-cyan-100 text-cyan-800',
             SITE_ENGINEER: 'bg-blue-100 text-blue-800',
             DOCUMENT_CONTROL_MANAGER: 'bg-indigo-100 text-indigo-800',
             SITE_STAFF: 'bg-cyan-100 text-cyan-800',
             BUDGET_PLANNING_TEAM: 'bg-teal-100 text-teal-800',
         };
         return colors[role] || 'bg-gray-100 text-gray-800';
+    };
+
+    // Format full name from firstName and lastName
+    const getFullName = (member) => {
+        if (member.fullName) return member.fullName;
+        return `${member.firstName || ''} ${member.lastName || ''}`.trim() || 'N/A';
+    };
+
+    // Get the correct ID field
+    const getMemberId = (member) => {
+        return member.id || member.staffId;
     };
 
     if (isLoading) {
@@ -79,119 +118,161 @@ const StaffList = ({ onStaffSelect }) => {
         );
     }
 
-    const staff = data?.data?.content || [];
-    const totalPages = data?.data?.totalPages || 0;
-    const totalElements = data?.data?.totalElements || 0;
+    const staff = data?.data?.content || data?.data || [];
+    const totalPages = data?.data?.totalPages || 1;
+    const totalElements = data?.data?.totalElements || staff.length;
 
     return (
         <div className="space-y-6">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-3xl font-bold text-gray-900">Staff Directory</h2>
-                    <p className="text-gray-600 mt-1">
-                        Manage and view all construction staff members
-                    </p>
+                    <h2 className="section-title mb-2">Staff Directory</h2>
+                    <p className="text-primary-600 font-medium mt-1">Manage and view all construction staff members</p>
                 </div>
-                <div className="text-sm text-gray-600">
-                    Showing {staff.length} of {totalElements} staff
-                </div>
+                <button
+                    onClick={() => refetch()}
+                    className="flex items-center space-x-2 px-4 py-2 bg-white border-2 border-primary-200 rounded-lg hover:bg-primary-50 hover:border-primary-400 transition-all"
+                >
+                    <RefreshCw size={18} className="text-primary-700" />
+                    <span className="text-primary-700 font-medium">Refresh</span>
+                </button>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap gap-4 p-4 bg-gray-50 rounded-xl">
-                <select
-                    value={filterRole}
-                    onChange={(e) => setFilterRole(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                    <option value="">All Roles</option>
-                    {rolesData?.data?.map((role) => (
-                        <option key={role.name} value={role.name}>
-                            {role.displayName}
-                        </option>
-                    ))}
-                </select>
+            {/* Search and Filters */}
+            <div className="space-y-4">
+                <div className="card-buildsmart p-4">
+                    <div className="relative mb-4">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Search by name, email, or phone..."
+                            value={searchTerm}
+                            onChange={(e) => {
+                                setSearchTerm(e.target.value);
+                                setPage(0);
+                            }}
+                            className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                    </div>
 
-                <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                    <option value="">All Statuses</option>
-                    {statusesData?.data?.map((status) => (
-                        <option key={status.name} value={status.name}>
-                            {status.displayName}
-                        </option>
-                    ))}
-                </select>
+                    <div className="flex flex-wrap gap-4 items-center">
+                        <select
+                            value={filterRole}
+                            onChange={(e) => {
+                                setFilterRole(e.target.value);
+                                setPage(0);
+                            }}
+                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="">All Roles</option>
+                            {rolesData?.data?.map((role) => (
+                                <option key={role.name} value={role.name}>
+                                    {role.displayName}
+                                </option>
+                            ))}
+                        </select>
 
-                <select
-                    value={size}
-                    onChange={(e) => {
-                        setSize(Number(e.target.value));
-                        setPage(0);
-                    }}
-                    className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                    <option value="5">5 per page</option>
-                    <option value="10">10 per page</option>
-                    <option value="20">20 per page</option>
-                    <option value="50">50 per page</option>
-                </select>
+                        <select
+                            value={filterStatus}
+                            onChange={(e) => {
+                                setFilterStatus(e.target.value);
+                                setPage(0);
+                            }}
+                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="">All Statuses</option>
+                            {statusesData?.data?.map((status) => (
+                                <option key={status.name} value={status.name}>
+                                    {status.displayName}
+                                </option>
+                            ))}
+                        </select>
+
+                        <select
+                            value={size}
+                            onChange={(e) => {
+                                setSize(Number(e.target.value));
+                                setPage(0);
+                            }}
+                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="5">5 per page</option>
+                            <option value="10">10 per page</option>
+                            <option value="20">20 per page</option>
+                            <option value="50">50 per page</option>
+                        </select>
+
+                        {(filterRole || filterStatus || searchTerm) && (
+                            <button
+                                onClick={handleClearFilters}
+                                className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors flex items-center space-x-2"
+                            >
+                                <Filter size={16} />
+                                <span>Clear Filters</span>
+                            </button>
+                        )}
+
+                        <div className="ml-auto text-sm text-primary-600 flex items-center font-medium">
+                            Showing {staff.length} of {totalElements} staff
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Staff Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {staff.map((member) => (
                     <div
-                        key={member.id}
-                        className="bg-white border-2 border-gray-200 rounded-xl p-6 hover:shadow-xl hover:border-blue-400 transition-all duration-200 group"
+                        key={getMemberId(member)}
+                        className="card-buildsmart group"
                     >
                         <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center space-x-3">
-                                <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-full">
-                                    <UserCircle className="text-white" size={24} />
+                                <div className="bg-primary-100 p-3 rounded-full">
+                                    <span className="text-primary-700 font-bold text-sm">
+                                        {member.firstName?.charAt(0)}{member.lastName?.charAt(0)}
+                                    </span>
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">
-                                        {member.fullName}
+                                    <h3 className="font-bold text-lg text-primary-700 group-hover:text-primary-600 transition-colors">
+                                        {getFullName(member)}
                                     </h3>
-                                    <p className="text-sm text-gray-500">{member.staffId}</p>
+                                    <p className="text-sm text-primary-600">{member.staffId}</p>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="space-y-3 mb-4">
-                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                        <div className="space-y-3 mb-4 text-primary-600">
+                            <div className="flex items-center space-x-2 text-sm">
                                 <Mail size={16} />
                                 <span className="truncate">{member.email}</span>
                             </div>
-                            <div className="flex items-center space-x-2 text-sm text-gray-600">
+                            <div className="flex items-center space-x-2 text-sm">
                                 <Phone size={16} />
                                 <span>{member.phoneNumber}</span>
                             </div>
                         </div>
 
                         <div className="flex flex-wrap gap-2 mb-4">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadge(member.role)}`}>
-                {member.role.replace(/_/g, ' ')}
-              </span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleBadge(member.role)}`}>
+                                {member.role.replace(/_/g, ' ')}
+                            </span>
                             <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusBadge(member.status)}`}>
-                {member.status}
-              </span>
+                                {member.status}
+                            </span>
                         </div>
 
                         <div className="flex space-x-2 pt-4 border-t">
                             <button
-                                onClick={() => onStaffSelect(member.id)}
-                                className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                                onClick={() => onStaffSelect(getMemberId(member))}
+                                className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-gradient-to-r from-primary-700 to-primary-600 text-white rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all duration-200"
                             >
                                 <Eye size={16} />
                                 <span>View</span>
                             </button>
                             <button
-                                onClick={() => handleDelete(member.id, member.fullName)}
+                                onClick={() => handleDelete(getMemberId(member), getFullName(member))}
                                 className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors"
                             >
                                 <Trash2 size={16} />
@@ -220,15 +301,17 @@ const StaffList = ({ onStaffSelect }) => {
                         <button
                             onClick={() => setPage(Math.max(0, page - 1))}
                             disabled={page === 0}
-                            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
                         >
                             <ChevronLeft size={20} />
+                            <span>Previous</span>
                         </button>
                         <button
                             onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
                             disabled={page >= totalPages - 1}
-                            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
                         >
+                            <span>Next</span>
                             <ChevronRight size={20} />
                         </button>
                     </div>

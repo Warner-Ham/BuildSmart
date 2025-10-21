@@ -39,30 +39,38 @@ const Login = ({ onLoginSuccess }) => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-8 text-center">
-                    <div className="bg-white/20 backdrop-blur-sm p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+        <div className="min-h-screen bg-gradient-to-br from-primary-700 via-primary-600 to-primary-900 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
+                {/* Header - BuildSmart Green Gradient */}
+                <div className="bg-gradient-to-r from-primary-700 to-primary-600 p-8 text-center relative overflow-hidden">
+                    {/* Decorative elements */}
+                    <div className="absolute top-0 left-0 w-32 h-32 bg-white/5 rounded-full -translate-x-16 -translate-y-16"></div>
+                    <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/5 rounded-full translate-x-12 translate-y-12"></div>
+
+                    <div className="bg-white/20 backdrop-blur-sm p-4 rounded-full w-20 h-20 mx-auto mb-4 flex items-center justify-center relative z-10">
                         <Lock className="text-white" size={40} />
                     </div>
-                    <h1 className="text-3xl font-bold text-white mb-2">BuildSmart</h1>
-                    <p className="text-blue-100">Staff Management System</p>
+                    <h1 className="text-3xl font-bold text-white mb-2 relative z-10" style={{
+                        textShadow: '2px 2px 4px rgba(0, 0, 0, 0.2)'
+                    }}>
+                        BuildSmart
+                    </h1>
+                    <p className="text-primary-50 relative z-10">Staff Management System</p>
                 </div>
 
                 {/* Login Form */}
                 <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="form-label">
                             Username
                         </label>
                         <div className="relative">
-                            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary-400" size={20} />
                             <input
                                 type="text"
                                 {...register('username', { required: 'Username is required' })}
-                                className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                                    errors.username ? 'border-red-500' : 'border-gray-300'
+                                className={`form-input pl-10 ${
+                                    errors.username ? 'border-red-500' : ''
                                 }`}
                                 placeholder="Enter your username"
                             />
@@ -73,23 +81,23 @@ const Login = ({ onLoginSuccess }) => {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="form-label">
                             Password
                         </label>
                         <div className="relative">
-                            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                            <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary-400" size={20} />
                             <input
                                 type={showPassword ? 'text' : 'password'}
                                 {...register('password', { required: 'Password is required' })}
-                                className={`w-full pl-10 pr-12 py-3 border-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                                    errors.password ? 'border-red-500' : 'border-gray-300'
+                                className={`form-input pl-10 pr-12 ${
+                                    errors.password ? 'border-red-500' : ''
                                 }`}
                                 placeholder="Enter your password"
                             />
                             <button
                                 type="button"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-primary-400 hover:text-primary-600 transition-colors"
                             >
                                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                             </button>
@@ -102,11 +110,11 @@ const Login = ({ onLoginSuccess }) => {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                        className="btn-primary w-full flex items-center justify-center space-x-2"
                     >
                         {isLoading ? (
                             <>
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary-700"></div>
                                 <span>Logging in...</span>
                             </>
                         ) : (
@@ -116,12 +124,19 @@ const Login = ({ onLoginSuccess }) => {
                             </>
                         )}
                     </button>
+
+                    {/* Additional Info */}
+                    <div className="pt-4 border-t border-primary-100">
+                        <p className="text-center text-xs text-primary-600 mb-2">
+                            🔒 Secure Authentication
+                        </p>
+                    </div>
                 </form>
 
-                {/* Footer */}
-                <div className="bg-gray-50 px-8 py-4 text-center border-t">
-                    <p className="text-sm text-gray-600">
-                        Default: <span className="font-mono font-bold">admin / admin123</span>
+                {/* Footer - BuildSmart Style */}
+                <div className="bg-gradient-buildsmart px-8 py-4 text-center border-t-2 border-primary-200">
+                    <p className="text-sm text-primary-700 font-medium">
+                        Default: <span className="font-mono font-bold bg-white px-2 py-1 rounded">admin / admin123</span>
                     </p>
                 </div>
             </div>

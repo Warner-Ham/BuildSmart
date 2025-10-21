@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom scrollbar */
+/* Custom scrollbar - BuildSmart Green */
 @layer utilities {
   .scrollbar-thin::-webkit-scrollbar {
     width: 6px;
@@ -15,12 +15,12 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    background: #3b82f6;
+    background: #287a2c; /* BuildSmart green */
     border-radius: 10px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: #2563eb;
+    background: #205c20; /* BuildSmart darker green */
   }
 }
 
@@ -32,8 +32,8 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-  'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI',
+  'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
   sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -61,18 +61,49 @@ body {
   background-size: 1000px 100%;
 }
 
+/* BuildSmart Custom Animations */
+@keyframes fadeInUp {
+  0% { opacity: 0; transform: translateY(40px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInLeft {
+  0% { opacity: 0; transform: translateX(-40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeInRight {
+  0% { opacity: 0; transform: translateX(40px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes cardSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) scale(0.95) rotateX(15deg);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateY(-5px) scale(1.02) rotateX(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotateX(0deg);
+  }
+}
+
 /* Loading skeleton */
 .skeleton {
   @apply animate-shimmer bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded;
 }
 
-/* Custom card hover effect */
+/* Custom card hover effect - BuildSmart Style */
 .card-hover {
   @apply transition-all duration-300 ease-in-out;
 }
 
 .card-hover:hover {
-  @apply transform scale-105 shadow-2xl;
+  @apply transform -translate-y-2 scale-105 shadow-2xl;
 }
 
 /* Smooth transitions */
@@ -80,62 +111,232 @@ body {
   @apply transition-all duration-300 ease-in-out;
 }
 
-/* Focus styles */
+/* Focus styles - BuildSmart Green */
 input:focus,
 select:focus,
 textarea:focus {
-  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+  @apply outline-none ring-2 ring-primary-700 ring-offset-2;
 }
 
-/* Button styles */
+/* ========================================
+   BUILDSMART BUTTON STYLES
+   ======================================== */
 .btn-primary {
-  @apply px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply px-6 py-3 bg-white text-primary-700 font-bold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.25);
+  letter-spacing: 0.3px;
+}
+
+.btn-primary:hover:not(:disabled) {
+  @apply bg-accent-600 text-primary-700 transform -translate-y-1;
+  box-shadow: 4px 4px 8px rgba(0, 52, 3, 0.35);
 }
 
 .btn-secondary {
-  @apply px-6 py-3 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply px-6 py-3 bg-primary-700 text-white font-bold rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.25);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  @apply bg-primary-600 transform -translate-y-1;
+  box-shadow: 4px 4px 8px rgba(0, 52, 3, 0.35);
 }
 
 .btn-danger {
-  @apply px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-medium rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed;
+  @apply px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed;
 }
 
-/* Badge styles */
+.btn-success {
+  @apply px-6 py-3 bg-gradient-to-r from-primary-700 to-primary-600 text-white font-bold rounded-lg hover:from-primary-600 hover:to-primary-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+/* ========================================
+   BUILDSMART BADGE STYLES
+   ======================================== */
 .badge {
-  @apply px-3 py-1 rounded-full text-xs font-medium;
+  @apply px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide;
+  letter-spacing: 0.5px;
 }
 
-.badge-success {
-  @apply badge bg-green-100 text-green-800 border border-green-200;
+.badge-success,
+.badge-active {
+  @apply badge bg-primary-50 text-primary-700 border-2 border-accent-500;
 }
 
-.badge-warning {
-  @apply badge bg-yellow-100 text-yellow-800 border border-yellow-200;
+.badge-warning,
+.badge-pending {
+  @apply badge bg-yellow-50 text-yellow-800 border-2 border-yellow-400;
 }
 
-.badge-danger {
-  @apply badge bg-red-100 text-red-800 border border-red-200;
+.badge-danger,
+.badge-suspended {
+  @apply badge bg-red-50 text-red-800 border-2 border-red-400;
 }
 
-.badge-info {
-  @apply badge bg-blue-100 text-blue-800 border border-blue-200;
+.badge-info,
+.badge-inactive {
+  @apply badge bg-gray-100 text-gray-700 border-2 border-gray-400;
 }
 
-/* Card styles */
+/* ========================================
+   BUILDSMART CARD STYLES
+   ======================================== */
 .card {
-  @apply bg-white rounded-xl shadow-lg p-6 border-2 border-gray-200;
+  @apply bg-white rounded-2xl p-6 border-4 border-white outline outline-2 outline-gray-200 transition-all duration-300;
+  box-shadow: 0 4px 16px rgba(32, 92, 32, 0.12);
 }
 
-.card-gradient {
-  @apply bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg p-6 border-2 border-gray-200;
+.card:hover {
+  @apply transform -translate-y-2 scale-105;
+  box-shadow: 0 12px 48px rgba(32, 92, 32, 0.24);
 }
 
-/* Text utilities */
+.card-gradient,
+.card-buildsmart {
+  @apply rounded-2xl p-6 border-4 border-white outline outline-2 outline-gray-200 transition-all duration-300;
+  background: linear-gradient(135deg, #e8f5e9 70%, #c8e6c9 100%);
+  box-shadow: 0 4px 16px rgba(32, 92, 32, 0.12);
+  position: relative;
+  overflow: visible;
+}
+
+.card-gradient:hover,
+.card-buildsmart:hover {
+  @apply transform -translate-y-2 scale-105;
+  box-shadow: 0 12px 48px rgba(32, 92, 32, 0.24);
+}
+
+/* Card hover glow effect */
+.card-buildsmart::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #a8e063 0%, #4cff4c 100%);
+  opacity: 0;
+  transform: scale(0.95);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: -1;
+  pointer-events: none;
+}
+
+.card-buildsmart:hover::before {
+  opacity: 0.3;
+  transform: scale(1);
+}
+
+/* ========================================
+   BUILDSMART FORM STYLES
+   ======================================== */
+.form-input,
+.input-buildsmart {
+  @apply w-full px-4 py-3 border-2 border-primary-200 rounded-lg text-primary-700 transition-all;
+  background: #f8fff8;
+}
+
+.form-input:focus,
+.input-buildsmart:focus {
+  @apply border-primary-700 ring-2 ring-primary-700 ring-opacity-20;
+}
+
+.form-label {
+  @apply block text-sm font-semibold text-primary-700 mb-2;
+}
+
+/* ========================================
+   BUILDSMART SECTION STYLES
+   ======================================== */
+.section-container {
+  @apply max-w-6xl mx-auto my-8 px-8 py-12 bg-white rounded-3xl relative overflow-hidden;
+  box-shadow: 0 4px 16px rgba(32, 92, 32, 0.12);
+}
+
+.section-container::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: -80px;
+  width: 220px;
+  height: 180px;
+  background: linear-gradient(120deg, #a5d6a7 60%, #81c784 100%);
+  opacity: 0.15;
+  clip-path: polygon(0 0, 100% 0, 80% 100%, 20% 80%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.section-container::after {
+  content: '';
+  position: absolute;
+  bottom: -40px;
+  right: -60px;
+  width: 160px;
+  height: 120px;
+  background: linear-gradient(120deg, #a5d6a7 60%, #a8e063 100%);
+  opacity: 0.15;
+  clip-path: polygon(20% 0, 70% 20%, 80% 100%, 0 80%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.section-title {
+  @apply text-4xl font-bold text-primary-700 mb-6 relative z-10;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px rgba(232, 245, 233, 0.8);
+}
+
+.section-title::after {
+  content: '';
+  display: block;
+  width: 80px;
+  height: 5px;
+  margin-top: 0.75rem;
+  background: linear-gradient(90deg, #a8e063 0%, #4caf50 100%);
+  border-radius: 3px;
+}
+
+/* ========================================
+   BUILDSMART NAVBAR STYLES
+   ======================================== */
+.navbar-buildsmart {
+  @apply text-white px-8 py-4 border-b-4 border-white shadow-lg sticky top-0 z-50;
+  background: linear-gradient(to bottom, #287a2c 50%, #1E6821 80%, #003403 95%);
+  box-shadow: 0 0.2rem 0px rgba(0, 0, 0, 1);
+}
+
+/* ========================================
+   BUILDSMART STAFF CARD STYLES
+   ======================================== */
+.staff-card {
+  @apply rounded-2xl p-6 border-4 border-white outline outline-2 outline-gray-200 transition-all duration-300 cursor-pointer;
+  background: linear-gradient(135deg, #e8f5e9 75%, #c8e6c9 100%);
+}
+
+.staff-card:hover {
+  @apply transform -translate-y-2 scale-105;
+  box-shadow: 0 12px 48px rgba(32, 92, 32, 0.24);
+}
+
+.staff-avatar {
+  @apply w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold mb-4;
+  background: linear-gradient(135deg, #205c20 0%, #287a2c 100%);
+  box-shadow: 0 4px 12px rgba(32, 92, 32, 0.25);
+}
+
+/* ========================================
+   TEXT UTILITIES
+   ======================================== */
 .text-gradient {
-  @apply bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent;
+  @apply bg-gradient-to-r from-primary-700 to-primary-600 bg-clip-text text-transparent;
 }
 
-/* Page transitions */
+.text-buildsmart {
+  @apply text-primary-700;
+}
+
+/* ========================================
+   PAGE TRANSITIONS
+   ======================================== */
 .page-enter {
   opacity: 0;
   transform: translateY(20px);
@@ -156,12 +357,17 @@ textarea:focus {
   transition: opacity 300ms;
 }
 
-/* Custom tooltip */
+/* ========================================
+   CUSTOM TOOLTIP
+   ======================================== */
 .tooltip {
-  @apply absolute z-50 px-3 py-2 text-sm text-white bg-gray-900 rounded-lg shadow-lg;
+  @apply absolute z-50 px-3 py-2 text-sm text-white rounded-lg shadow-lg;
+  background: #205c20;
 }
 
-/* Print styles */
+/* ========================================
+   PRINT STYLES
+   ======================================== */
 @media print {
   .no-print {
     display: none !important;
@@ -174,5 +380,23 @@ textarea:focus {
   .card {
     box-shadow: none;
     border: 1px solid #e5e7eb;
+  }
+}
+
+/* ========================================
+   RESPONSIVE ADJUSTMENTS
+   ======================================== */
+@media (max-width: 768px) {
+  .section-container {
+    @apply px-4 py-8;
+  }
+
+  .section-title {
+    @apply text-3xl;
+  }
+
+  .card,
+  .card-buildsmart {
+    @apply p-4;
   }
 }
