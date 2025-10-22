@@ -146,6 +146,51 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
     }
   };
 
+  // Download monthly report as PDF
+  const downloadReport = async (reportId) => {
+    try {
+      setLoading(true);
+      const response = await fetch(`http://localhost:8080/api/monthly-reports/${reportId}/download`, {
+        method: 'GET',
+        headers: {
+          'X-User-Id': loggedInUser || 'admin',
+        },
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        
+        // Get filename from response headers or create default
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = 'MonthlyReport.pdf';
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+          if (filenameMatch) {
+            filename = filenameMatch[1];
+          }
+        }
+        
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
+        setSuccess('Report downloaded successfully!');
+      } else {
+        setError('Failed to download report');
+      }
+    } catch (error) {
+      console.error('Error downloading report:', error);
+      setError('Failed to download report');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // View report details
   const viewReport = (report) => {
     setViewingReport(report);
@@ -656,6 +701,22 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
                             </button>
                           </>
                         )}
+                        
+                        {/* Download button - available for all users */}
+                        <button
+                          onClick={() => downloadReport(report.reportId)}
+                          style={{
+                            background: '#8e44ad',
+                            color: 'white',
+                            border: 'none',
+                            padding: '6px 12px',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem'
+                          }}
+                        >
+                          📄 Download
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -983,7 +1044,24 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button
+                onClick={() => downloadReport(viewingReport.reportId)}
+                style={{
+                  background: '#8e44ad',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}
+              >
+                📄 Download PDF
+              </button>
+              
               <button
                 onClick={() => setShowViewModal(false)}
                 style={{

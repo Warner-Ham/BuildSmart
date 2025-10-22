@@ -1,6 +1,7 @@
 package com.example.buildsmart.controller;
 
 import com.example.buildsmart.Service.MonthlyReportService;
+import com.example.buildsmart.Service.PDFReportService;
 import com.example.buildsmart.dto.MonthlyReportDTO;
 import com.example.buildsmart.dto.MonthlyReportSummaryDTO;
 import com.example.buildsmart.exeption.MonthlyReportException;
@@ -18,6 +19,8 @@ import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 @RestController
 @RequestMapping("/api/monthly-reports")
@@ -30,6 +33,9 @@ public class MonthlyReportController {
 
     @Autowired
     private com.example.buildsmart.Service.MonthlyReportScheduler monthlyReportScheduler;
+
+    @Autowired
+    private PDFReportService pdfReportService;
 
     // Create a new monthly report
     @Operation(summary = "Create a new monthly report", description = "Creates a new monthly report for a project")
@@ -276,6 +282,41 @@ public class MonthlyReportController {
             // This would return dashboard-specific data
             // For now, returning a simple response
             return new ResponseEntity<>("Dashboard endpoint - to be implemented", HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Download monthly report as PDF
+    @Operation(summary = "Download monthly report as PDF", description = "Downloads a specific monthly report as a PDF file")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "PDF report generated successfully"),
+            @ApiResponse(responseCode = "404", description = "Monthly report not found"),
+            @ApiResponse(responseCode = "500", description = "Error generating PDF")
+    })
+    @GetMapping("/{id}/download")
+    public ResponseEntity<byte[]> downloadMonthlyReportPDF(
+            @Parameter(description = "Monthly report ID") @PathVariable Long id) {
+        try {
+            MonthlyReportDTO report = monthlyReportService.getMonthlyReportById(id);
+            if (report == null) {
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
+
+            byte[] pdfBytes = pdfReportService.generateMonthlyReportPDF(report);
+            
+            // Generate filename
+            String filename = String.format("MonthlyReport_%s_%d_%02d.pdf", 
+                report.getProjectName() != null ? report.getProjectName().replaceAll("[^a-zA-Z0-9]", "_") : "Project",
+                report.getReportYear(),
+                report.getReportMonth());
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", filename);
+            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
