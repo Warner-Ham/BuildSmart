@@ -6,7 +6,6 @@ import { Users, UserPlus, BarChart3, Menu, X, LogOut } from 'lucide-react';
 import StaffList from './components/StaffList';
 import CreateStaffForm from './components/CreateStaffForm';
 import Dashboard from './components/Dashboard';
-import Login from './components/Login';
 
 const queryClient = new QueryClient({
     defaultOptions: {
@@ -16,8 +15,6 @@ const queryClient = new QueryClient({
         },
     },
 });
-
-// (Use real imported components above)
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -47,8 +44,133 @@ function App() {
         setUser(null);
     };
 
+    // Check if user is not authenticated
     if (!isAuthenticated) {
-        return <Login onLoginSuccess={handleLoginSuccess} />;
+        return (
+            <div style={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, #e8f5e9 0%, #f4f7fa 100%)'
+            }}>
+                <div style={{
+                    textAlign: 'center',
+                    background: 'white',
+                    padding: '3rem',
+                    borderRadius: '16px',
+                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                    border: '3px solid #e8f5e9',
+                    maxWidth: '500px'
+                }}>
+                    <Users size={64} color="#205c20" style={{ marginBottom: '1rem' }} />
+                    <h2 style={{ color: '#205c20', marginBottom: '1rem', fontSize: '1.8rem' }}>
+                        Access Denied
+                    </h2>
+                    <p style={{ color: '#666', marginBottom: '1.5rem', fontSize: '1rem' }}>
+                        Please log in as admin to access the staff management system.
+                    </p>
+                    <div style={{
+                        background: '#f8f9fa',
+                        padding: '1rem',
+                        borderRadius: '8px',
+                        border: '2px dashed #ddd',
+                        fontSize: '0.9rem',
+                        color: '#888'
+                    }}>
+                        <strong style={{ color: '#205c20' }}>Hint:</strong> Open browser console and run:<br/>
+                        <code style={{ 
+                            background: '#fff', 
+                            padding: '0.5rem', 
+                            display: 'block', 
+                            marginTop: '0.5rem',
+                            borderRadius: '4px',
+                            fontFamily: 'monospace',
+                            fontSize: '0.85rem'
+                        }}>
+                            localStorage.setItem('username', 'admin');<br/>
+                            localStorage.setItem('token', 'demo-token');<br/>
+                            location.reload();
+                        </code>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Check if user is admin
+    if (user && user.username !== 'admin') {
+        return (
+            <div style={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'linear-gradient(135deg, #e8f5e9 0%, #f4f7fa 100%)'
+            }}>
+                <div style={{
+                    textAlign: 'center',
+                    background: 'white',
+                    padding: '3rem',
+                    borderRadius: '16px',
+                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1)',
+                    border: '3px solid #ffebee',
+                    maxWidth: '500px'
+                }}>
+                    <div style={{
+                        width: '80px',
+                        height: '80px',
+                        background: '#ffebee',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 1.5rem auto'
+                    }}>
+                        <X size={48} color="#e74c3c" />
+                    </div>
+                    <h2 style={{ color: '#e74c3c', marginBottom: '1rem', fontSize: '1.8rem' }}>
+                        Access Denied
+                    </h2>
+                    <p style={{ color: '#666', marginBottom: '1rem', fontSize: '1rem' }}>
+                        Only admin users can access the staff management system.
+                    </p>
+                    <p style={{ color: '#999', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                        Current user: <strong style={{ color: '#205c20' }}>{user.username}</strong>
+                    </p>
+                    <button 
+                        onClick={handleLogout} 
+                        style={{
+                            padding: '0.75rem 2rem',
+                            background: 'linear-gradient(135deg, #e74c3c 0%, #c0392b 100%)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '10px',
+                            cursor: 'pointer',
+                            fontWeight: '700',
+                            fontSize: '1rem',
+                            boxShadow: '0 4px 12px rgba(231, 76, 60, 0.3)',
+                            transition: 'all 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            margin: '0 auto'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.target.style.transform = 'scale(1.05)';
+                            e.target.style.boxShadow = '0 6px 16px rgba(231, 76, 60, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.target.style.transform = 'scale(1)';
+                            e.target.style.boxShadow = '0 4px 12px rgba(231, 76, 60, 0.3)';
+                        }}
+                    >
+                        <LogOut size={20} />
+                        Logout
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     const navigation = [
@@ -65,8 +187,6 @@ function App() {
                 return <StaffList />;
             case 'create':
                 return <CreateStaffForm />;
-            case 'search':
-                return <SearchStaff />;
             default:
                 return <Dashboard />;
         }
@@ -135,8 +255,8 @@ function App() {
                                     boxShadow: '0 0 8px #9AFE6A'
                                 }}></div>
                                 <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>
-                  {user?.username || 'User'}
-                </span>
+                                    {user?.username || 'User'}
+                                </span>
                             </div>
                             <button
                                 onClick={handleLogout}
@@ -212,8 +332,6 @@ function App() {
                                             );
                                         })}
                                     </ul>
-
-                                    {/* Quick Stats removed */}
                                 </nav>
                             </aside>
                         )}
