@@ -254,12 +254,16 @@ public class MonthlyReportController {
 
     // Delete monthly report
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteMonthlyReport(@PathVariable Long id) {
+    public ResponseEntity<?> deleteMonthlyReport(
+            @PathVariable Long id,
+            @RequestHeader("X-User-Role") String userRole) {
         try {
-            monthlyReportService.deleteMonthlyReport(id);
+            monthlyReportService.deleteMonthlyReport(id, userRole);
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        } catch (MonthlyReportException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseEntity.badRequest().body(Map.of("error", "Failed to delete report: " + e.getMessage()));
         }
     }
 

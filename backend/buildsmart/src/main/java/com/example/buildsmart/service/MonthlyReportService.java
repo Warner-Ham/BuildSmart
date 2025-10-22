@@ -366,6 +366,29 @@ public class MonthlyReportService {
         monthlyReportRepository.deleteById(id);
     }
 
+    // Delete monthly report with role-based permissions
+    public void deleteMonthlyReport(Long id, String userRole) {
+        MonthlyReport report = monthlyReportRepository.findById(id)
+                .orElseThrow(() -> new MonthlyReportException("Monthly report not found with ID: " + id));
+
+        // Check permissions based on user role and report status
+        if ("APPROVED".equals(report.getStatus())) {
+            throw new MonthlyReportException("Cannot delete approved report");
+        }
+
+        // Site Manager can delete rejected reports
+        if ("REJECTED".equals(report.getStatus()) && !"Site Manager".equals(userRole) && !"Admin".equals(userRole)) {
+            throw new MonthlyReportException("Only Site Managers and Admins can delete rejected reports");
+        }
+
+        // Document Control Manager and Admin can delete draft reports
+        if ("DRAFT".equals(report.getStatus()) && !"Document Control Manager".equals(userRole) && !"Admin".equals(userRole)) {
+            throw new MonthlyReportException("Only Document Control Managers and Admins can delete draft reports");
+        }
+
+        monthlyReportRepository.deleteById(id);
+    }
+
     // Get reports with high budget variance (disabled - no budget tracking)
     public List<MonthlyReportSummaryDTO> getReportsWithHighVariance(BigDecimal threshold) {
         // Return empty list since budget tracking is disabled

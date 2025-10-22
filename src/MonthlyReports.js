@@ -268,6 +268,41 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
     }
   };
 
+  // Delete monthly report
+  const deleteReport = async (reportId, reportStatus) => {
+    const report = monthlyReports.find(r => r.reportId === reportId);
+    const projectName = report ? getReportProjectName(report) : 'Unknown Project';
+    const monthName = report ? new Date(report.reportYear, report.reportMonth - 1).toLocaleDateString('en-US', { 
+      month: 'long', 
+      year: 'numeric' 
+    }) : 'Unknown Period';
+
+    const confirmMessage = `Are you sure you want to delete the ${reportStatus.toLowerCase()} monthly report for ${projectName} (${monthName})?\n\nThis action cannot be undone.`;
+    
+    if (window.confirm(confirmMessage)) {
+      try {
+        const response = await fetch(`http://localhost:8080/api/monthly-reports/${reportId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-Role': loggedInRole || 'Admin',
+          },
+        });
+
+        if (response.ok) {
+          setSuccess('Report deleted successfully!');
+          loadMonthlyReports();
+        } else {
+          const errorData = await response.json().catch(() => ({ error: 'Failed to delete report' }));
+          setError(errorData.error || 'Failed to delete report');
+        }
+      } catch (error) {
+        console.error('Error deleting report:', error);
+        setError('Failed to delete report');
+      }
+    }
+  };
+
   // Filter reports based on current filters
   const filteredReports = monthlyReports.filter(report => {
     const projectMatch = !filters.projectId || report.projectId === parseInt(filters.projectId);
@@ -700,6 +735,25 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
                               Reject
                             </button>
                           </>
+                        )}
+                        
+                        {/* Delete button - for Site Manager and Admin on rejected reports, and Document Control Manager/Admin on draft reports */}
+                        {((report.status === 'REJECTED' && (loggedInRole === 'Site Manager' || loggedInRole === 'Admin')) ||
+                          (report.status === 'DRAFT' && (loggedInRole === 'Document Control Manager' || loggedInRole === 'Admin'))) && (
+                          <button
+                            onClick={() => deleteReport(report.reportId, report.status)}
+                            style={{
+                              background: '#e74c3c',
+                              color: 'white',
+                              border: 'none',
+                              padding: '6px 12px',
+                              borderRadius: '4px',
+                              cursor: 'pointer',
+                              fontSize: '0.9rem'
+                            }}
+                          >
+                            🗑️ Delete
+                          </button>
                         )}
                         
                         {/* Download button - available for all users */}
