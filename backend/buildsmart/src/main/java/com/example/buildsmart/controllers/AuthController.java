@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @Tag(name = "Authentication", description = "Authentication and authorization endpoints")
 @CrossOrigin(
-        origins = "http://localhost:5173",
+        origins = "http://localhost:5713", originPatterns = "http://localhost:5173", allowPrivateNetwork = "http://localhost:3000",
         allowCredentials = "true"
 )
 
