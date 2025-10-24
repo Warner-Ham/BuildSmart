@@ -256,8 +256,8 @@ function Navbar({ onLoginClick, loggedInUser, loggedInRole, loginTime, onLogoutC
                 {(loggedInUser && ["Site Manager", "Document Control Manager", "Admin"].includes(loggedInRole)) && (
                     <Link to="/budget" onClick={() => setNavOpen(false)}>Budgeting</Link>
                 )}
-                {/* Staff Management tab only for Admin */}
-                {(loggedInUser && loggedInRole === "Admin") && (
+                {/* Staff Management tab for all logged-in staff */}
+                {loggedInUser && (
                     <Link to="/staff" onClick={() => setNavOpen(false)}>Staff</Link>
                 )}
                 {/* Project request tab for all users */}
