@@ -449,11 +449,35 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
         const workDays = Number(report.workDays) || 0;
         const totalHours = (Number(report.totalLaborHours) || 0) + (Number(report.totalMachineryHours) || 0);
         const totalCost = Number(report.totalCost) || 0;
+        const laborHours = Number(report.totalLaborHours) || 0;
+        const machineryHours = Number(report.totalMachineryHours) || 0;
+        const laborCost = Number(report.totalLaborCost) || 0;
+        const machineryCost = Number(report.totalMachineryCost) || 0;
+
+        // Calculate efficiency as percentage based on resource utilization
+        // Labor efficiency: percentage of labor hours vs total hours
+        const laborEfficiency = totalHours > 0 ? (laborHours / totalHours) * 100 : 0;
+        
+        // Machinery efficiency: percentage of machinery hours vs total hours
+        const machineryEfficiency = totalHours > 0 ? (machineryHours / totalHours) * 100 : 0;
+
+        // Debug logging to help troubleshoot
+        console.log('Efficiency Metrics Debug:', {
+            report: report,
+            laborCost: laborCost,
+            machineryCost: machineryCost,
+            laborHours: laborHours,
+            machineryHours: machineryHours,
+            laborEfficiency: laborEfficiency,
+            machineryEfficiency: machineryEfficiency
+        });
 
         return {
             avgHoursPerDay: workDays > 0 ? (totalHours / workDays) : 0,
             avgCostPerHour: totalHours > 0 ? (totalCost / totalHours) : 0,
             avgCostPerDay: workDays > 0 ? (totalCost / workDays) : 0,
+            laborEfficiency: laborEfficiency,
+            machineryEfficiency: machineryEfficiency,
             workDays,
             totalHours,
             totalCost
@@ -502,25 +526,6 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
         }));
     };
 
-    const getTrendData = (historicalReports, currentReport) => {
-        const sortedReports = historicalReports
-            .filter(r => r.reportId !== currentReport.reportId)
-            .sort((a, b) => {
-                if (a.reportYear !== b.reportYear) return a.reportYear - b.reportYear;
-                return a.reportMonth - b.reportMonth;
-            });
-
-        const labels = sortedReports.map(r =>
-            new Date(r.reportYear, r.reportMonth - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-        );
-
-        return {
-            labels: [...labels, new Date(currentReport.reportYear, currentReport.reportMonth - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })],
-            costs: [...sortedReports.map(r => Number(r.totalCost) || 0), Number(currentReport.totalCost) || 0],
-            productivity: [...sortedReports.map(r => Number(r.productivityScore) || 0), Number(currentReport.productivityScore) || 0],
-            workDays: [...sortedReports.map(r => Number(r.workDays) || 0), Number(currentReport.workDays) || 0]
-        };
-    };
 
     // Clear messages
     const clearMessages = () => {
@@ -1311,7 +1316,7 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
                                         {(() => {
                                             const efficiency = calculateEfficiencyMetrics(viewingReport);
                                             return (
-                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', textAlign: 'center' }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', textAlign: 'center' }}>
                                                     <div style={{ padding: '0.5rem', background: '#e8f5e8', borderRadius: '4px' }}>
                                                         <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#27ae60' }}>
                                                             {efficiency.avgHoursPerDay.toFixed(1)}
@@ -1335,6 +1340,18 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
                                                             {efficiency.workDays}
                                                         </div>
                                                         <div style={{ fontSize: '0.9rem', color: '#666' }}>Work Days</div>
+                                                    </div>
+                                                    <div style={{ padding: '0.5rem', background: '#e8f8f5', borderRadius: '4px' }}>
+                                                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#16a085' }}>
+                                                            {efficiency.laborEfficiency.toFixed(1)}%
+                                                        </div>
+                                                        <div style={{ fontSize: '0.9rem', color: '#666' }}>Labor Efficiency</div>
+                                                    </div>
+                                                    <div style={{ padding: '0.5rem', background: '#fdf2e9', borderRadius: '4px' }}>
+                                                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#e67e22' }}>
+                                                            {efficiency.machineryEfficiency.toFixed(1)}%
+                                                        </div>
+                                                        <div style={{ fontSize: '0.9rem', color: '#666' }}>Machinery Efficiency</div>
                                                     </div>
                                                 </div>
                                             );
@@ -1428,59 +1445,6 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
                                         </div>
                                     )}
 
-                                    {/* Trend Analysis */}
-                                    {analyticsData.historicalReports.length > 0 && (
-                                        <div style={{ padding: '1rem', background: 'white', border: '1px solid #eee', borderRadius: '8px', gridColumn: '1 / -1' }}>
-                                            <h5 style={{ marginBottom: '1rem', color: '#205c20', textAlign: 'center' }}> Project Trends</h5>
-                                            {(() => {
-                                                const trendData = getTrendData(analyticsData.historicalReports, viewingReport);
-                                                if (trendData.labels.length < 2) {
-                                                    return <div style={{ textAlign: 'center', color: '#666' }}>Insufficient data for trend analysis</div>;
-                                                }
-                                                const data = {
-                                                    labels: trendData.labels,
-                                                    datasets: [
-                                                        {
-                                                            label: 'Total Cost (Rs.)',
-                                                            data: trendData.costs,
-                                                            borderColor: '#3498db',
-                                                            backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                                                            yAxisID: 'y'
-                                                        },
-                                                        {
-                                                            label: 'Productivity (%)',
-                                                            data: trendData.productivity,
-                                                            borderColor: '#27ae60',
-                                                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
-                                                            yAxisID: 'y1'
-                                                        }
-                                                    ]
-                                                };
-                                                const options = {
-                                                    responsive: true,
-                                                    plugins: {
-                                                        legend: { position: 'top' }
-                                                    },
-                                                    scales: {
-                                                        y: {
-                                                            type: 'linear',
-                                                            display: true,
-                                                            position: 'left',
-                                                            ticks: { callback: (v) => `Rs. ${Number(v).toLocaleString()}` }
-                                                        },
-                                                        y1: {
-                                                            type: 'linear',
-                                                            display: true,
-                                                            position: 'right',
-                                                            ticks: { callback: (v) => `${v}%` },
-                                                            grid: { drawOnChartArea: false }
-                                                        }
-                                                    }
-                                                };
-                                                return <Line data={data} options={options} />;
-                                            })()}
-                                        </div>
-                                    )}
 
                                 </div>
                             )}
