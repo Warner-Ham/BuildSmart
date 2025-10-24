@@ -21,9 +21,6 @@ public class MonthlyReportDTO {
     @Max(value = 12, message = "Report month must be between 1 and 12")
     private Integer reportMonth;
 
-    @DecimalMin(value = "0.0", message = "Total materials cost must be non-negative")
-    private BigDecimal totalMaterialsCost;
-
     @DecimalMin(value = "0.0", message = "Total labor cost must be non-negative")
     private BigDecimal totalLaborCost;
 
@@ -108,14 +105,6 @@ public class MonthlyReportDTO {
 
     public void setReportMonth(Integer reportMonth) {
         this.reportMonth = reportMonth;
-    }
-
-    public BigDecimal getTotalMaterialsCost() {
-        return totalMaterialsCost;
-    }
-
-    public void setTotalMaterialsCost(BigDecimal totalMaterialsCost) {
-        this.totalMaterialsCost = totalMaterialsCost;
     }
 
     public BigDecimal getTotalLaborCost() {

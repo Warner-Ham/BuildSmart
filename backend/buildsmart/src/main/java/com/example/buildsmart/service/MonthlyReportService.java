@@ -1,4 +1,4 @@
-package com.example.buildsmart.Service;
+package com.example.buildsmart.service;
 
 import com.example.buildsmart.dto.MonthlyReportDTO;
 import com.example.buildsmart.dto.MonthlyReportSummaryDTO;
@@ -55,7 +55,6 @@ public class MonthlyReportService {
                 reportDTO.getReportMonth(), createdBy);
 
         // Set basic information
-        monthlyReport.setTotalMaterialsCost(reportDTO.getTotalMaterialsCost());
         monthlyReport.setTotalLaborCost(reportDTO.getTotalLaborCost());
         monthlyReport.setTotalMachineryCost(reportDTO.getTotalMachineryCost());
         monthlyReport.setTotalLaborHours(reportDTO.getTotalLaborHours());
@@ -124,7 +123,6 @@ public class MonthlyReportService {
         }
 
         // Calculate totals from daily logs
-        BigDecimal totalMaterialsCost = BigDecimal.ZERO;
         BigDecimal totalLaborCost = BigDecimal.ZERO;
         BigDecimal totalMachineryCost = BigDecimal.ZERO;
         Double totalLaborHours = 0.0;
@@ -157,7 +155,6 @@ public class MonthlyReportService {
         if (isOverwrite && existingReportEntity != null) {
             // Update existing report
             monthlyReport = existingReportEntity;
-            monthlyReport.setTotalMaterialsCost(totalMaterialsCost);
             monthlyReport.setTotalLaborCost(totalLaborCost);
             monthlyReport.setTotalMachineryCost(totalMachineryCost);
             monthlyReport.setTotalLaborHours(totalLaborHours);
@@ -174,7 +171,6 @@ public class MonthlyReportService {
         } else {
             // Create new monthly report
             monthlyReport = new MonthlyReport(project, year, month, createdBy);
-            monthlyReport.setTotalMaterialsCost(totalMaterialsCost);
             monthlyReport.setTotalLaborCost(totalLaborCost);
             monthlyReport.setTotalMachineryCost(totalMachineryCost);
             monthlyReport.setTotalLaborHours(totalLaborHours);
@@ -295,7 +291,6 @@ public class MonthlyReportService {
         }
 
         // Update fields
-        report.setTotalMaterialsCost(reportDTO.getTotalMaterialsCost());
         report.setTotalLaborCost(reportDTO.getTotalLaborCost());
         report.setTotalMachineryCost(reportDTO.getTotalMachineryCost());
         report.setTotalLaborHours(reportDTO.getTotalLaborHours());
@@ -402,7 +397,6 @@ public class MonthlyReportService {
         dto.setProjectId(report.getProject().getId());
         dto.setReportYear(report.getReportYear());
         dto.setReportMonth(report.getReportMonth());
-        dto.setTotalMaterialsCost(report.getTotalMaterialsCost());
         dto.setTotalLaborCost(report.getTotalLaborCost());
         dto.setTotalMachineryCost(report.getTotalMachineryCost());
         dto.setTotalCost(report.getTotalCost());

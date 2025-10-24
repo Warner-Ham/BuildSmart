@@ -1,4 +1,4 @@
-package com.example.buildsmart.Service;
+package com.example.buildsmart.service;
 
 import com.example.buildsmart.dto.MonthlyReportDTO;
 import com.itextpdf.kernel.pdf.PdfDocument;
@@ -69,9 +69,6 @@ public class PDFReportService {
             // Financial Information
             infoTable.addCell(createHeaderCell("Financial Summary"));
             infoTable.addCell(createDataCell(""));
-            
-            infoTable.addCell(createLabelCell("Total Materials Cost:"));
-            infoTable.addCell(createDataCell(formatCurrency(report.getTotalMaterialsCost())));
             
             infoTable.addCell(createLabelCell("Total Labor Cost:"));
             infoTable.addCell(createDataCell(formatCurrency(report.getTotalLaborCost())));
