@@ -1,4 +1,4 @@
-package com.example.buildsmart.Service;
+package com.example.buildsmart.service;
 
 import com.example.buildsmart.model.DailyLog;
 import com.example.buildsmart.model.AuditTrail;
@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Objects;
+import java.time.LocalDate;
 
 @Service
 @Transactional
@@ -28,6 +29,12 @@ public class DailyLogService {
         // Validate project exists
         projectRepository.findById(dailyLog.getProject().getId())
                 .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        // Validate that log date is not in the future
+        LocalDate today = LocalDate.now();
+        if (dailyLog.getLogDate().isAfter(today)) {
+            throw new RuntimeException("Cannot create daily logs for future dates");
+        }
 
         // Check for duplicate log date
         dailyLogRepository.findByProjectIdAndLogDate(
@@ -56,6 +63,11 @@ public class DailyLogService {
 
         // Update all fields that can be modified
         if (dailyLogDetails.getLogDate() != null) {
+            // Validate that updated log date is not in the future
+            LocalDate today = LocalDate.now();
+            if (dailyLogDetails.getLogDate().isAfter(today)) {
+                throw new RuntimeException("Cannot update daily logs to future dates");
+            }
             dailyLog.setLogDate(dailyLogDetails.getLogDate());
         }
         if (dailyLogDetails.getMaterialsUsed() != null) {
