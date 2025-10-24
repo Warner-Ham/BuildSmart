@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js';
-import { Doughnut, Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title } from 'chart.js';
+import { Doughnut, Bar, Line, Pie } from 'react-chartjs-2';
 import './App.css';
 
 // Register Chart.js components once
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title);
 
 // MonthlyReports component - A clean, standalone monthly reports page
 function MonthlyReports({ loggedInRole, loggedInUser }) {
@@ -19,6 +19,14 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingReport, setViewingReport] = useState(null);
+  
+  // Analytics states
+  const [analyticsData, setAnalyticsData] = useState({
+    dailyLogs: [],
+    projectBudget: null,
+    historicalReports: []
+  });
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   
   // Form states
   const [generateForm, setGenerateForm] = useState({
@@ -191,10 +199,66 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
     }
   };
 
+  // Load analytics data for a report
+  const loadAnalyticsData = async (report) => {
+    setAnalyticsLoading(true);
+    try {
+      // Load daily logs for the report period
+      const startDate = new Date(report.reportYear, report.reportMonth - 1, 1);
+      const endDate = new Date(report.reportYear, report.reportMonth, 0);
+      
+      const dailyLogsResponse = await fetch(`http://localhost:8080/api/daily-logs/project/${report.projectId}?startDate=${startDate.toISOString().split('T')[0]}&endDate=${endDate.toISOString().split('T')[0]}`);
+      const dailyLogs = dailyLogsResponse.ok ? await dailyLogsResponse.json() : [];
+      
+      // Load project budget if available
+      let projectBudget = null;
+      try {
+        const budgetResponse = await fetch(`http://localhost:8080/api/project-budgets/project/${report.projectId}`);
+        if (budgetResponse.ok) {
+          projectBudget = await budgetResponse.json();
+        }
+      } catch (error) {
+        console.log('No budget data available');
+      }
+      
+      // Load historical reports for trend analysis
+      const historicalResponse = await fetch(`http://localhost:8080/api/monthly-reports/project/${report.projectId}`);
+      const historicalReports = historicalResponse.ok ? await historicalResponse.json() : [];
+      
+      setAnalyticsData({
+        dailyLogs: Array.isArray(dailyLogs) ? dailyLogs : [],
+        projectBudget,
+        historicalReports: Array.isArray(historicalReports) ? historicalReports : []
+      });
+    } catch (error) {
+      console.error('Error loading analytics data:', error);
+      setAnalyticsData({
+        dailyLogs: [],
+        projectBudget: null,
+        historicalReports: []
+      });
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
   // View report details
-  const viewReport = (report) => {
+  const viewReport = async (report) => {
     setViewingReport(report);
     setShowViewModal(true);
+    
+    // Fetch full report details for analytics
+    try {
+      const response = await fetch(`http://localhost:8080/api/monthly-reports/${report.reportId}`);
+      if (response.ok) {
+        const fullReport = await response.json();
+        setViewingReport(fullReport); // Update with full report data
+      }
+    } catch (error) {
+      console.error('Error fetching full report details:', error);
+    }
+    
+    await loadAnalyticsData(report);
   };
 
   // Approve report
@@ -333,6 +397,129 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
       case 'REJECTED': return '#e74c3c';
       default: return '#95a5a6';
     }
+  };
+
+  // Analytics helper functions
+  const calculateCostBreakdown = (report) => {
+    // Check if we have individual cost breakdowns (excluding materials)
+    const hasDetailedCosts = report.totalLaborCost !== undefined || 
+                            report.totalMachineryCost !== undefined;
+    
+    if (hasDetailedCosts) {
+      const labor = Number(report.totalLaborCost) || 0;
+      const machinery = Number(report.totalMachineryCost) || 0;
+      const total = labor + machinery;
+      
+      return {
+        labor: { value: labor, percentage: total > 0 ? (labor / total * 100) : 0 },
+        machinery: { value: machinery, percentage: total > 0 ? (machinery / total * 100) : 0 },
+        total,
+        hasDetailedData: true
+      };
+    } else {
+      // Fallback: estimate breakdown from total cost if detailed costs not available
+      const totalCost = Number(report.totalCost) || 0;
+      const estimatedLabor = totalCost * 0.6;    // Estimate 60% labor
+      const estimatedMachinery = totalCost * 0.4; // Estimate 40% machinery
+      
+      return {
+        labor: { value: estimatedLabor, percentage: 60 },
+        machinery: { value: estimatedMachinery, percentage: 40 },
+        total: totalCost,
+        hasDetailedData: false
+      };
+    }
+  };
+
+  const calculateResourceUtilization = (report) => {
+    const laborHours = Number(report.totalLaborHours) || 0;
+    const machineryHours = Number(report.totalMachineryHours) || 0;
+    const totalHours = laborHours + machineryHours;
+    
+    return {
+      laborHours,
+      machineryHours,
+      totalHours,
+      laborPercentage: totalHours > 0 ? (laborHours / totalHours * 100) : 0,
+      machineryPercentage: totalHours > 0 ? (machineryHours / totalHours * 100) : 0
+    };
+  };
+
+  const calculateEfficiencyMetrics = (report) => {
+    const workDays = Number(report.workDays) || 0;
+    const totalHours = (Number(report.totalLaborHours) || 0) + (Number(report.totalMachineryHours) || 0);
+    const totalCost = Number(report.totalCost) || 0;
+    
+    return {
+      avgHoursPerDay: workDays > 0 ? (totalHours / workDays) : 0,
+      avgCostPerHour: totalHours > 0 ? (totalCost / totalHours) : 0,
+      avgCostPerDay: workDays > 0 ? (totalCost / workDays) : 0,
+      workDays,
+      totalHours,
+      totalCost
+    };
+  };
+
+  const getMaterialsAnalysis = (dailyLogs) => {
+    const materialsCount = {};
+    dailyLogs.forEach(log => {
+      if (log.materialsUsed) {
+        const materials = log.materialsUsed.split(',').map(m => m.trim());
+        materials.forEach(material => {
+          if (material) {
+            materialsCount[material] = (materialsCount[material] || 0) + 1;
+          }
+        });
+      }
+    });
+    
+    return Object.entries(materialsCount)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 10); // Top 10 materials
+  };
+
+  const getTeamPerformance = (dailyLogs) => {
+    const teamStats = {};
+    dailyLogs.forEach(log => {
+      if (log.createdBy) {
+        if (!teamStats[log.createdBy]) {
+          teamStats[log.createdBy] = {
+            logs: 0,
+            laborHours: 0,
+            machineryHours: 0
+          };
+        }
+        teamStats[log.createdBy].logs++;
+        teamStats[log.createdBy].laborHours += Number(log.laborHours) || 0;
+        teamStats[log.createdBy].machineryHours += Number(log.machineryHours) || 0;
+      }
+    });
+    
+    return Object.entries(teamStats).map(([member, stats]) => ({
+      member,
+      ...stats,
+      totalHours: stats.laborHours + stats.machineryHours
+    }));
+  };
+
+  const getTrendData = (historicalReports, currentReport) => {
+    const sortedReports = historicalReports
+      .filter(r => r.reportId !== currentReport.reportId)
+      .sort((a, b) => {
+        if (a.reportYear !== b.reportYear) return a.reportYear - b.reportYear;
+        return a.reportMonth - b.reportMonth;
+      });
+    
+    const labels = sortedReports.map(r => 
+      new Date(r.reportYear, r.reportMonth - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    );
+    
+    return {
+      labels: [...labels, new Date(currentReport.reportYear, currentReport.reportMonth - 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })],
+      costs: [...sortedReports.map(r => Number(r.totalCost) || 0), Number(currentReport.totalCost) || 0],
+      productivity: [...sortedReports.map(r => Number(r.productivityScore) || 0), Number(currentReport.productivityScore) || 0],
+      workDays: [...sortedReports.map(r => Number(r.workDays) || 0), Number(currentReport.workDays) || 0]
+    };
   };
 
   // Clear messages
@@ -952,14 +1139,15 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
             background: 'white',
             padding: '2rem',
             borderRadius: '8px',
-            maxWidth: '800px',
-            width: '90%',
-            maxHeight: '90vh',
+            maxWidth: '1200px',
+            width: '95%',
+            maxHeight: '95vh',
             overflow: 'auto'
           }}>
             <h3 style={{ marginBottom: '1.5rem', color: '#205c20' }}>
               Monthly Report Details
             </h3>
+            
             
             <div style={{ marginBottom: '1rem' }}>
               <strong>Project:</strong> {getReportProjectName(viewingReport)}
@@ -1015,7 +1203,7 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
               </div>
             )}
 
-            {/* Analytics: Charts */}
+            {/* Enhanced Analytics */}
             <div style={{
               margin: '1.5rem 0',
               padding: '1rem',
@@ -1023,79 +1211,279 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
               border: '1px solid #e9ecef',
               borderRadius: '8px'
             }}>
-              <h4 style={{ marginBottom: '1rem', color: '#205c20' }}>Analytics</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', alignItems: 'center' }}>
-                {/* Productivity Score Doughnut */}
-                <div style={{ padding: '0.5rem', background: 'white', border: '1px solid #eee', borderRadius: '8px' }}>
-                  <div style={{ textAlign: 'center', marginBottom: '0.5rem', fontWeight: 600 }}>Productivity</div>
-                  {(() => {
-                    const productivity = Math.max(0, Math.min(100, Number(viewingReport.productivityScore) || 0));
-                    const data = {
-                      labels: ['Score', 'Remaining'],
-                      datasets: [
-                        {
+              <h4 style={{ marginBottom: '1rem', color: '#205c20' }}> Advanced Analytics</h4>
+              
+              {analyticsLoading ? (
+                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                  <div style={{ fontSize: '1.1rem', color: '#666' }}>Loading analytics data...</div>
+                </div>
+              ) : !viewingReport ? (
+                <div style={{ textAlign: 'center', padding: '2rem' }}>
+                  <div style={{ fontSize: '1.1rem', color: '#666' }}>No report data available</div>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                  
+                  {/* Cost Breakdown Analysis */}
+                  <div style={{ padding: '1rem', background: 'white', border: '1px solid #eee', borderRadius: '8px' }}>
+                    <h5 style={{ marginBottom: '1rem', color: '#205c20', textAlign: 'center' }}>
+                       Cost Breakdown
+                      {(() => {
+                        const breakdown = calculateCostBreakdown(viewingReport);
+                        return !breakdown.hasDetailedData ? (
+                          <span style={{ fontSize: '0.8rem', color: '#f39c12', fontWeight: 'normal' }}> (Estimated)</span>
+                        ) : null;
+                      })()}
+                    </h5>
+                    {(() => {
+                      const breakdown = calculateCostBreakdown(viewingReport);
+                      if (breakdown.total === 0) {
+                        return <div style={{ textAlign: 'center', color: '#666', padding: '2rem' }}>No cost data available</div>;
+                      }
+                      
+                      const data = {
+                        labels: ['Labor', 'Machinery'],
+                        datasets: [{
+                          data: [breakdown.labor.value, breakdown.machinery.value],
+                          backgroundColor: ['#3498db', '#f39c12'],
+                          borderWidth: 0
+                        }]
+                      };
+                      const options = {
+                        plugins: {
+                          legend: { position: 'bottom' },
+                          tooltip: { 
+                            callbacks: { 
+                              label: (ctx) => {
+                                const label = ctx.label;
+                                const value = Number(ctx.raw);
+                                const percentage = breakdown[label.toLowerCase()].percentage.toFixed(1);
+                                const note = !breakdown.hasDetailedData ? ' (estimated)' : '';
+                                return `${label}: Rs. ${value.toLocaleString()} (${percentage}%)${note}`;
+                              }
+                            } 
+                          }
+                        }
+                      };
+                      return <Pie data={data} options={options} />;
+                    })()}
+                  </div>
+
+                  {/* Resource Utilization */}
+                  <div style={{ padding: '1rem', background: 'white', border: '1px solid #eee', borderRadius: '8px' }}>
+                    <h5 style={{ marginBottom: '1rem', color: '#205c20', textAlign: 'center' }}> Resource Utilization</h5>
+                    {(() => {
+                      const utilization = calculateResourceUtilization(viewingReport);
+                      if (utilization.totalHours === 0) {
+                        return <div style={{ textAlign: 'center', color: '#666', padding: '2rem' }}>No hours data available</div>;
+                      }
+                      
+                      const data = {
+                        labels: ['Labor Hours', 'Machinery Hours'],
+                        datasets: [{
+                          data: [utilization.laborHours, utilization.machineryHours],
+                          backgroundColor: ['#27ae60', '#8e44ad'],
+                          borderWidth: 0
+                        }]
+                      };
+                      const options = {
+                        plugins: {
+                          legend: { position: 'bottom' },
+                          tooltip: { 
+                            callbacks: { 
+                              label: (ctx) => {
+                                const label = ctx.label;
+                                const value = Number(ctx.raw);
+                                const percentage = label === 'Labor Hours' ? utilization.laborPercentage : utilization.machineryPercentage;
+                                return `${label}: ${value.toFixed(1)}h (${percentage.toFixed(1)}%)`;
+                              }
+                            } 
+                          }
+                        }
+                      };
+                      return <Doughnut data={data} options={options} />;
+                    })()}
+                  </div>
+
+                  {/* Efficiency Metrics */}
+                  <div style={{ padding: '1rem', background: 'white', border: '1px solid #eee', borderRadius: '8px' }}>
+                    <h5 style={{ marginBottom: '1rem', color: '#205c20', textAlign: 'center' }}> Efficiency Metrics</h5>
+                    {(() => {
+                      const efficiency = calculateEfficiencyMetrics(viewingReport);
+                      return (
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', textAlign: 'center' }}>
+                          <div style={{ padding: '0.5rem', background: '#e8f5e8', borderRadius: '4px' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#27ae60' }}>
+                              {efficiency.avgHoursPerDay.toFixed(1)}
+                            </div>
+                            <div style={{ fontSize: '0.9rem', color: '#666' }}>Avg Hours/Day</div>
+                          </div>
+                          <div style={{ padding: '0.5rem', background: '#e8f4fd', borderRadius: '4px' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#3498db' }}>
+                              Rs. {efficiency.avgCostPerHour.toFixed(0)}
+                            </div>
+                            <div style={{ fontSize: '0.9rem', color: '#666' }}>Cost/Hour</div>
+                          </div>
+                          <div style={{ padding: '0.5rem', background: '#fef9e7', borderRadius: '4px' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#f39c12' }}>
+                              Rs. {efficiency.avgCostPerDay.toFixed(0)}
+                            </div>
+                            <div style={{ fontSize: '0.9rem', color: '#666' }}>Cost/Day</div>
+                          </div>
+                          <div style={{ padding: '0.5rem', background: '#f4e8f7', borderRadius: '4px' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#8e44ad' }}>
+                              {efficiency.workDays}
+                            </div>
+                            <div style={{ fontSize: '0.9rem', color: '#666' }}>Work Days</div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Productivity Score */}
+                  <div style={{ padding: '1rem', background: 'white', border: '1px solid #eee', borderRadius: '8px' }}>
+                    <h5 style={{ marginBottom: '1rem', color: '#205c20', textAlign: 'center' }}> Productivity Score</h5>
+                    {(() => {
+                      const productivity = Math.max(0, Math.min(100, Number(viewingReport.productivityScore) || 0));
+                      const data = {
+                        labels: ['Score', 'Remaining'],
+                        datasets: [{
                           data: [productivity, 100 - productivity],
                           backgroundColor: ['#27ae60', '#e9ecef'],
                           borderWidth: 0
-                        }
-                      ]
-                    };
-                    const options = {
-                      plugins: {
-                        legend: { display: false },
-                        tooltip: { enabled: true }
-                      },
-                      cutout: '70%'
-                    };
-                    return (
-                      <div style={{ position: 'relative', width: '100%', maxWidth: 260, margin: '0 auto' }}>
-                        <Doughnut data={data} options={options} />
-                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontWeight: 700, color: '#205c20' }}>
-                          {productivity.toFixed(0)}%
+                        }]
+                      };
+                      const options = {
+                        plugins: {
+                          legend: { display: false },
+                          tooltip: { enabled: true }
+                        },
+                        cutout: '70%'
+                      };
+                      return (
+                        <div style={{ position: 'relative', width: '100%', maxWidth: 200, margin: '0 auto' }}>
+                          <Doughnut data={data} options={options} />
+                          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontWeight: 700, color: '#205c20', fontSize: '1.2rem' }}>
+                            {productivity.toFixed(0)}%
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })()}
-                </div>
+                      );
+                    })()}
+                  </div>
 
-                {/* Cost vs Variance Bar */}
-                <div style={{ padding: '0.5rem', background: 'white', border: '1px solid #eee', borderRadius: '8px' }}>
-                  <div style={{ textAlign: 'center', marginBottom: '0.5rem', fontWeight: 600 }}>Cost vs Variance</div>
-                  {(() => {
-                    const totalCost = Number(viewingReport.totalCost) || 0;
-                    const budgetVariance = Number(viewingReport.budgetVariance) || 0;
-                    const data = {
-                      labels: ['Total Cost', 'Budget Variance'],
-                      datasets: [
-                        {
-                          label: 'Amount (Rs.)',
-                          data: [totalCost, budgetVariance],
-                          backgroundColor: ['#3498db', '#e67e22']
+                  {/* Materials Analysis */}
+                  {analyticsData.dailyLogs.length > 0 && (
+                    <div style={{ padding: '1rem', background: 'white', border: '1px solid #eee', borderRadius: '8px' }}>
+                      <h5 style={{ marginBottom: '1rem', color: '#205c20', textAlign: 'center' }}>🔨 Top Materials Used</h5>
+                      {(() => {
+                        const materials = getMaterialsAnalysis(analyticsData.dailyLogs);
+                        if (materials.length === 0) {
+                          return <div style={{ textAlign: 'center', color: '#666' }}>No materials data available</div>;
                         }
-                      ]
-                    };
-                    const options = {
-                      responsive: true,
-                      plugins: {
-                        legend: { display: false },
-                        tooltip: { callbacks: { label: (ctx) => `Rs. ${Number(ctx.raw).toLocaleString()}` } }
-                      },
-                      scales: {
-                        x: { grid: { display: false } },
-                        y: {
-                          ticks: { callback: (v) => `Rs. ${Number(v).toLocaleString()}` },
-                          grid: { color: '#f0f0f0' }
+                        return (
+                          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                            {materials.map(([material, count], index) => (
+                              <div key={material} style={{ 
+                                display: 'flex', 
+                                justifyContent: 'space-between', 
+                                padding: '0.5rem 0',
+                                borderBottom: index < materials.length - 1 ? '1px solid #eee' : 'none'
+                              }}>
+                                <span style={{ fontSize: '0.9rem' }}>{material}</span>
+                                <span style={{ fontWeight: 'bold', color: '#205c20' }}>{count} times</span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Team Performance */}
+                  {analyticsData.dailyLogs.length > 0 && (
+                    <div style={{ padding: '1rem', background: 'white', border: '1px solid #eee', borderRadius: '8px' }}>
+                      <h5 style={{ marginBottom: '1rem', color: '#205c20', textAlign: 'center' }}> Team Performance</h5>
+                      {(() => {
+                        const teamStats = getTeamPerformance(analyticsData.dailyLogs);
+                        if (teamStats.length === 0) {
+                          return <div style={{ textAlign: 'center', color: '#666' }}>No team data available</div>;
                         }
-                      }
-                    };
-                    return (
-                      <div style={{ width: '100%', maxWidth: 420, margin: '0 auto' }}>
-                        <Bar data={data} options={options} />
-                      </div>
-                    );
-                  })()}
+                        return (
+                          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                            {teamStats.map((member, index) => (
+                              <div key={member.member} style={{ 
+                                padding: '0.5rem 0',
+                                borderBottom: index < teamStats.length - 1 ? '1px solid #eee' : 'none'
+                              }}>
+                                <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{member.member}</div>
+                                <div style={{ fontSize: '0.8rem', color: '#666' }}>
+                                  {member.logs} logs • {member.totalHours.toFixed(1)}h total
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* Trend Analysis */}
+                  {analyticsData.historicalReports.length > 0 && (
+                    <div style={{ padding: '1rem', background: 'white', border: '1px solid #eee', borderRadius: '8px', gridColumn: '1 / -1' }}>
+                      <h5 style={{ marginBottom: '1rem', color: '#205c20', textAlign: 'center' }}> Project Trends</h5>
+                      {(() => {
+                        const trendData = getTrendData(analyticsData.historicalReports, viewingReport);
+                        if (trendData.labels.length < 2) {
+                          return <div style={{ textAlign: 'center', color: '#666' }}>Insufficient data for trend analysis</div>;
+                        }
+                        const data = {
+                          labels: trendData.labels,
+                          datasets: [
+                            {
+                              label: 'Total Cost (Rs.)',
+                              data: trendData.costs,
+                              borderColor: '#3498db',
+                              backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                              yAxisID: 'y'
+                            },
+                            {
+                              label: 'Productivity (%)',
+                              data: trendData.productivity,
+                              borderColor: '#27ae60',
+                              backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                              yAxisID: 'y1'
+                            }
+                          ]
+                        };
+                        const options = {
+                          responsive: true,
+                          plugins: {
+                            legend: { position: 'top' }
+                          },
+                          scales: {
+                            y: {
+                              type: 'linear',
+                              display: true,
+                              position: 'left',
+                              ticks: { callback: (v) => `Rs. ${Number(v).toLocaleString()}` }
+                            },
+                            y1: {
+                              type: 'linear',
+                              display: true,
+                              position: 'right',
+                              ticks: { callback: (v) => `${v}%` },
+                              grid: { drawOnChartArea: false }
+                            }
+                          }
+                        };
+                        return <Line data={data} options={options} />;
+                      })()}
+                    </div>
+                  )}
+
                 </div>
-              </div>
+              )}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

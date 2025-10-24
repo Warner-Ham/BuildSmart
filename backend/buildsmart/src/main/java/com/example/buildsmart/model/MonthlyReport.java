@@ -21,6 +21,9 @@ public class MonthlyReport {
     @Column(name = "report_month", nullable = false)
     private Integer reportMonth;
 
+    @Column(name = "total_materials_cost", precision = 10, scale = 2)
+    private BigDecimal totalMaterialsCost;
+
     @Column(name = "total_labor_cost", precision = 10, scale = 2)
     private BigDecimal totalLaborCost;
 
@@ -114,6 +117,14 @@ public class MonthlyReport {
 
     public void setReportMonth(Integer reportMonth) {
         this.reportMonth = reportMonth;
+    }
+
+    public BigDecimal getTotalMaterialsCost() {
+        return totalMaterialsCost;
+    }
+
+    public void setTotalMaterialsCost(BigDecimal totalMaterialsCost) {
+        this.totalMaterialsCost = totalMaterialsCost;
     }
 
     public BigDecimal getTotalLaborCost() {
@@ -246,10 +257,11 @@ public class MonthlyReport {
 
     // Business methods
     public void calculateTotals() {
+        BigDecimal materials = totalMaterialsCost != null ? totalMaterialsCost : BigDecimal.ZERO;
         BigDecimal labor = totalLaborCost != null ? totalLaborCost : BigDecimal.ZERO;
         BigDecimal machinery = totalMachineryCost != null ? totalMachineryCost : BigDecimal.ZERO;
         
-        this.totalCost = labor.add(machinery);
+        this.totalCost = materials.add(labor).add(machinery);
     }
 
     public void updateTimestamp(String updatedBy) {
