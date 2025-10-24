@@ -96,6 +96,13 @@ function DailyLogs({ loggedInRole, loggedInUser }) {
       return;
     }
 
+    // Check if the selected date is in the future
+    const today = new Date().toISOString().split('T')[0];
+    if (createForm.logDate > today) {
+      setError('Cannot create daily logs for future dates. Please select today or a past date.');
+      return;
+    }
+
     // Check if a log already exists for this project and date
     const existingLog = dailyLogs.find(log => 
       log.project.id === parseInt(createForm.projectId) && 
@@ -178,6 +185,13 @@ function DailyLogs({ loggedInRole, loggedInUser }) {
   // Update daily log
   const updateLog = async () => {
     if (!editingLog) return;
+
+    // Check if the selected date is in the future
+    const today = new Date().toISOString().split('T')[0];
+    if (editForm.logDate > today) {
+      setError('Cannot update daily logs to future dates. Please select today or a past date.');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -695,6 +709,7 @@ function DailyLogs({ loggedInRole, loggedInUser }) {
               <input
                 type="date"
                 value={createForm.logDate}
+                max={new Date().toISOString().split('T')[0]}
                 onChange={(e) => setCreateForm({ ...createForm, logDate: e.target.value })}
                 style={{
                   width: '100%',
@@ -880,6 +895,7 @@ function DailyLogs({ loggedInRole, loggedInUser }) {
               <input
                 type="date"
                 value={editForm.logDate}
+                max={new Date().toISOString().split('T')[0]}
                 onChange={(e) => setEditForm({ ...editForm, logDate: e.target.value })}
                 style={{
                   width: '100%',

@@ -1,4 +1,4 @@
-package com.example.buildsmart.Service;
+package com.example.buildsmart.service;
 
 import com.example.buildsmart.dto.MonthlyReportDTO;
 import com.example.buildsmart.dto.MonthlyReportSummaryDTO;
@@ -130,6 +130,7 @@ public class MonthlyReportService {
         Double totalLaborHours = 0.0;
         Double totalMachineryHours = 0.0;
         int workDays = dailyLogs.size();
+        
 
         // Calculate costs from daily logs with default rates
         // Note: In a real implementation, you would need to calculate costs based on actual rates

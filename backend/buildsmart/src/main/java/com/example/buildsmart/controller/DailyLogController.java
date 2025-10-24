@@ -2,7 +2,7 @@ package com.example.buildsmart.controller;
 
 import com.example.buildsmart.model.DailyLog;
 import com.example.buildsmart.model.Project;
-import com.example.buildsmart.Service.DailyLogService;
+import com.example.buildsmart.service.DailyLogService;
 import com.example.buildsmart.dto.DailyLogDTO;
 import com.example.buildsmart.repository.ProjectRepository;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,4 +1,4 @@
-package com.example.buildsmart.Service;
+package com.example.buildsmart.service;
 
 import com.example.buildsmart.model.MonthlyReport;
 import com.example.buildsmart.model.Project;

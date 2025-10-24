@@ -1,7 +1,8 @@
 package com.example.buildsmart.controller;
 
-import com.example.buildsmart.Service.MonthlyReportService;
-import com.example.buildsmart.Service.PDFReportService;
+import com.example.buildsmart.service.MonthlyReportService;
+import com.example.buildsmart.service.MonthlyReportScheduler;
+import com.example.buildsmart.service.PDFReportService;
 import com.example.buildsmart.dto.MonthlyReportDTO;
 import com.example.buildsmart.dto.MonthlyReportSummaryDTO;
 import com.example.buildsmart.exeption.MonthlyReportException;
@@ -32,7 +33,7 @@ public class MonthlyReportController {
     private MonthlyReportService monthlyReportService;
 
     @Autowired
-    private com.example.buildsmart.Service.MonthlyReportScheduler monthlyReportScheduler;
+    private MonthlyReportScheduler monthlyReportScheduler;
 
     @Autowired
     private PDFReportService pdfReportService;

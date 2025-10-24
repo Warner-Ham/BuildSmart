@@ -29,7 +29,6 @@ public class AuditTrail {
 
     @Column(name = "changed_at")
     private LocalDateTime changedAt;
-    private String changeField;
 
     // Constructors, getters, setters
     public AuditTrail() {}
@@ -43,7 +42,7 @@ public class AuditTrail {
     public DailyLog getDailyLog() { return dailyLog; }
     public void setDailyLog(DailyLog dailyLog) { this.dailyLog = dailyLog; }
     public String getChangedField() { return changedField; }
-    public void setChangedField(String changedField) { this.changeField = changedField; }
+    public void setChangedField(String changedField) { this.changedField = changedField; }
     public String getOldValue() { return oldValue; }
     public void setOldValue(String oldValue) { this.oldValue = oldValue; }
     public String getNewValue() { return newValue; }
