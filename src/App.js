@@ -1,12 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import BudgetingTab from './BudgetingTab';
-import CustomerEngagement from './CustomerEngagement';
-import ProjectManagement from './ProjectManagement';
-import StaffManagement from './StaffManagement';
-import MonthlyReports from './MonthlyReports';
-import DailyLogs from './DailyLogs';
-import LoginManager from './LoginManager';
 import { CSSTransition, TransitionGroup } from 'react-transition-group';
 import './App.scss';
 
@@ -255,27 +249,9 @@ function Navbar({ onLoginClick, loggedInUser, loggedInRole, loginTime, onLogoutC
         <Link to="/" onClick={() => setNavOpen(false)}>Home</Link>
         {/* About tab for all users */}
         <Link to="/about" onClick={() => setNavOpen(false)}>About</Link>
-        {/* Customer engagement tab for all users */}
-        <Link to="/customer-engagement" onClick={() => setNavOpen(false)}>Contact Us</Link>
         {/* Budgeting tab only for staff roles */}
         {(loggedInUser && ["Site Manager", "Document Control Manager", "Admin"].includes(loggedInRole)) && (
           <Link to="/budget" onClick={() => setNavOpen(false)}>Budgeting</Link>
-        )}
-        {/* Project management tab for staff roles */}
-        {(loggedInUser && ["Site Manager", "Document Control Manager", "Admin"].includes(loggedInRole)) && (
-          <Link to="/projects" onClick={() => setNavOpen(false)}>Projects</Link>
-        )}
-        {/* Monthly Reports tab for Document Control Manager, Site Manager and Admin */}
-        {(loggedInUser && ["Document Control Manager", "Site Manager", "Admin"].includes(loggedInRole)) && (
-          <Link to="/monthly-reports" onClick={() => setNavOpen(false)}>Monthly Reports</Link>
-        )}
-        {/* Daily Logs tab for Document Control Manager, Site Manager and Admin */}
-        {(loggedInUser && ["Document Control Manager", "Site Manager", "Admin"].includes(loggedInRole)) && (
-          <Link to="/daily-logs" onClick={() => setNavOpen(false)}>Daily Logs</Link>
-        )}
-        {/* Staff management tab only for Admin */}
-        {(loggedInUser && loggedInRole === "Admin") && (
-          <Link to="/staff" onClick={() => setNavOpen(false)}>Staff</Link>
         )}
         {/* Project request tab for all users */}
         <Link to="/request" onClick={() => setNavOpen(false)}>Request</Link>
@@ -751,7 +727,6 @@ function Home() {
           </div>
         </div>
       </div>
-      {/* ...existing code... */}
       {/* Projects section: Displays featured projects from backend */}
       {/* Simple: Shows a list of completed projects with images and details */}
       {/* Technical: Conditionally renders loading or project list, maps over projects array */}
@@ -900,6 +875,23 @@ function RequestForm() {
 }
 
 function App() {
+  useEffect(() => {
+    // Fetch budget alerts from the backend
+    fetch("/api/budget-alerts")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to fetch budget alerts");
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("Budget Alerts:", data);
+      })
+      .catch((error) => {
+        console.error("Error fetching budget alerts:", error);
+      });
+  }, []);
+
   // App component: Main application component managing global state and routing
   // Simple: The root component that handles login, navigation, and page switching
   // Technical: Uses React Router for routing, manages authentication state, handles page transitions
@@ -979,7 +971,7 @@ function App() {
     scrollToTop(); // Execute scroll animation
   }, [location.pathname]); // Run when route changes
 
-  const handleLogin = (username, role, userData = null) => {
+  const handleLogin = (username, role) => {
     // Handle successful login: Set user data and close popup
     // Simple: Records that user is now logged in
     // Technical: Updates authentication state with username, role, and current timestamp
@@ -1079,7 +1071,7 @@ function App() {
       />
       <div style={{ position: 'relative' }}>
         {/* Login popup: Shows when user clicks login */}
-        <LoginManager open={loginOpen} onClose={() => setLoginOpen(false)} onLogin={handleLogin} />
+        <LoginPopup open={loginOpen} onClose={() => setLoginOpen(false)} onLogin={handleLogin} />
         {/* Logout confirmation modal */}
         <ConfirmationModal
           open={showLogoutConfirm}
@@ -1110,7 +1102,6 @@ function App() {
               <Routes location={location}>
                 <Route path="/" element={<Home />} />
                 <Route path="/about" element={<AboutUs />} />
-                <Route path="/customer-engagement" element={<CustomerEngagement />} />
                 <Route path="/budget" element={
                   <ProtectedRoute 
                     requireAuth={true} 
@@ -1119,46 +1110,6 @@ function App() {
                     loggedInRole={loggedInRole}
                   >
                     <BudgetingTab loggedInRole={loggedInRole} />
-                  </ProtectedRoute>
-                } />
-                <Route path="/projects" element={
-                  <ProtectedRoute 
-                    requireAuth={true} 
-                    allowedRoles={["Site Manager", "Document Control Manager", "Admin"]}
-                    loggedInUser={loggedInUser}
-                    loggedInRole={loggedInRole}
-                  >
-                    <ProjectManagement loggedInRole={loggedInRole} />
-                  </ProtectedRoute>
-                } />
-                <Route path="/monthly-reports" element={
-                  <ProtectedRoute 
-                    requireAuth={true} 
-                    allowedRoles={["Document Control Manager", "Site Manager", "Admin"]}
-                    loggedInUser={loggedInUser}
-                    loggedInRole={loggedInRole}
-                  >
-                    <MonthlyReports loggedInRole={loggedInRole} loggedInUser={loggedInUser} />
-                  </ProtectedRoute>
-                } />
-                <Route path="/daily-logs" element={
-                  <ProtectedRoute 
-                    requireAuth={true} 
-                    allowedRoles={["Document Control Manager", "Site Manager", "Admin"]}
-                    loggedInUser={loggedInUser}
-                    loggedInRole={loggedInRole}
-                  >
-                    <DailyLogs loggedInRole={loggedInRole} loggedInUser={loggedInUser} />
-                  </ProtectedRoute>
-                } />
-                <Route path="/staff" element={
-                  <ProtectedRoute 
-                    requireAuth={true} 
-                    allowedRoles={["Admin"]}
-                    loggedInUser={loggedInUser}
-                    loggedInRole={loggedInRole}
-                  >
-                    <StaffManagement loggedInRole={loggedInRole} />
                   </ProtectedRoute>
                 } />
                 <Route path="/request" element={<RequestForm />} />
@@ -1184,7 +1135,6 @@ function App() {
               <ul>
                 <li><Link to="/">Home</Link></li>
                 <li><Link to="/about">About</Link></li>
-                <li><Link to="/customer-engagement">Contact Us</Link></li>
                 <li><Link to="/request">Request</Link></li>
               </ul>
             </div>

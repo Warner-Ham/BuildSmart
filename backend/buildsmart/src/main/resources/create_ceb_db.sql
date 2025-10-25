@@ -3,7 +3,6 @@ DROP DATABASE IF EXISTS ceb;
 CREATE DATABASE IF NOT EXISTS ceb;
 USE ceb;
 
-
 -- staff table
 CREATE TABLE staff (
     id VARCHAR(30) PRIMARY KEY, -- Unique staff ID
@@ -61,72 +60,7 @@ CREATE TABLE budget_alerts (
     FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
 );
 
--- Daily Log table
--- Note: created_by can be NULL to handle cases where staff ID doesn't exist
--- The application should either provide a valid staff ID or NULL
-CREATE TABLE IF NOT EXISTS daily_logs (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    project_id INT NOT NULL,
-    log_date DATE NOT NULL,
-    materials_used TEXT,
-    labor_hours DOUBLE,
-    machinery_hours DOUBLE,
-    comments TEXT,
-    created_by VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
-);
-
-
--- Monthly Report table
--- Note: created_by, updated_by, and approved_by have foreign key constraints to staff table
--- All staff references can be NULL to handle cases where staff might be deleted
-
-CREATE TABLE IF NOT EXISTS monthly_reports (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    project_id INT NOT NULL,
-    report_year INTEGER NOT NULL,
-    report_month INTEGER NOT NULL,
-    total_materials_cost DECIMAL(10,2) DEFAULT 0.00,
-    total_labor_cost DECIMAL(10,2) DEFAULT 0.00,
-    total_machinery_cost DECIMAL(10,2) DEFAULT 0.00,
-    total_cost DECIMAL(10,2) DEFAULT 0.00,
-    total_labor_hours DOUBLE DEFAULT 0.0,
-    total_machinery_hours DOUBLE DEFAULT 0.0,
-    work_days INTEGER DEFAULT 0,
-    productivity_score DOUBLE DEFAULT 0.0,
-    budget_variance DECIMAL(10,2) DEFAULT 0.00,
-    status VARCHAR(20) DEFAULT 'DRAFT',
-    notes TEXT,
-    created_by VARCHAR(100),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_by VARCHAR(100),
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    approved_by VARCHAR(100),
-    approved_at TIMESTAMP NULL,
-    FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE,
-    UNIQUE KEY unique_project_month_year (project_id, report_year, report_month)
-);
-
-
-CREATE TABLE IF NOT EXISTS audit_trail (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    daily_log_id INT,
-    changed_field VARCHAR(255),
-    old_value TEXT,
-    new_value TEXT,
-    changed_by VARCHAR(255),
-    changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_daily_log_id (daily_log_id),
-    INDEX idx_changed_at (changed_at),
-    INDEX idx_changed_by (changed_by),
-    FOREIGN KEY (daily_log_id) REFERENCES daily_logs(id) ON DELETE CASCADE,
-    FOREIGN KEY (changed_by) REFERENCES staff(id) ON DELETE SET NULL ON UPDATE CASCADE
-);
-
-
 -- staff data
--- Note: These staff IDs must be valid and consistent across the application
 INSERT INTO staff (id, username, password, email, role) VALUES
 ('CBE04', 'Not_Amaya', '20AMAYA02', 'amaya@gmail.com', 'Project Manager'),
 ('CBE07', 'SuperPieris', '5up3rp13r15', '2002pieris@yahoo.com', 'Site Manager'),
@@ -135,25 +69,20 @@ INSERT INTO staff (id, username, password, email, role) VALUES
 ('CBE25', 'JSaliya', 'MU113R1YAWA1996', 'jsaliya@gmail.com', 'Admin'),
 ('sm', 'test', 'test', 'Test@test.com', 'Site Manager'),
 ('dcm', 'test', 'test', 'Test@test.com', 'Document Control Manager'),
-('ad', 'test', 'test', 'Test@test.com', 'Admin'),
-('ADM001', 'admin', 'admin123', 'admin@buildsmart.lk', 'Admin'),
-('SM001', 'sitemanager', 'sm123', 'sitemanager@buildsmart.lk', 'Site Manager'),
-('DCM001', 'docmanager', 'dcm123', 'docmanager@buildsmart.lk', 'Document Control Manager'),
-('SE001', 'siteengineer', 'se123', 'siteengineer@buildsmart.lk', 'Site Engineer');
-
+('ad', 'test', 'test', 'Test@test.com', 'Admin');
 
 INSERT INTO project_requests VALUES
 (1, 'Aditya Pancho', 'paditya_home@gmail.com', '31/2, Bambalapitiya, Colombo',
 'Swimming pool for a house. The pool should be freeform, around 1.6m deep throughout, and at least 500 sq ft. The surfaces should be smooth. There are stairs with rails',
 '2024-03-14'),
-(2, 'Ruwan John Perera', 'rj45perera@example.com', '45/7, Galle Road, Mount Lavinia',
- 'Renovation of a two-story house including roof replacement, new electrical wiring, and modern bathroom fittings. Expected completion within 6 months.',
+(2, 'Ruwan John Perera', 'rj45perera@example.com', '45/7, Galle Road, Mount Lavinia', 
+ 'Renovation of a two-story house including roof replacement, new electrical wiring, and modern bathroom fittings. Expected completion within 6 months.', 
  '2024-04-02'),
-(3, 'Melissa Fernando', 'dilani.fernando@outlook.com', 'No. 12, Lake Road, Kandy',
- 'Construction of a boutique hotel with 12 rooms, a rooftop restaurant, and solar-powered hot water system. Eco-friendly design preferred.',
+(3, 'Melissa Fernando', 'dilani.fernando@outlook.com', 'No. 12, Lake Road, Kandy', 
+ 'Construction of a boutique hotel with 12 rooms, a rooftop restaurant, and solar-powered hot water system. Eco-friendly design preferred.', 
  '2024-04-10'),
-(4, 'Sajith De Silva', 'sajith.desilva@gmail.com', 'Industrial Zone, Katunayake',
- 'Request for a new warehouse facility with 10,000 sq ft storage, loading bays, and automated fire safety systems. Must comply with BOI regulations.',
+(4, 'Sajith De Silva', 'sajith.desilva@gmail.com', 'Industrial Zone, Katunayake', 
+ 'Request for a new warehouse facility with 10,000 sq ft storage, loading bays, and automated fire safety systems. Must comply with BOI regulations.', 
  '2024-04-18');
 
 
@@ -236,36 +165,3 @@ INSERT INTO project_budgets VALUES
 (57, 15, 16400, 26400, 12200, 14200, 10200, 6200, 85400, '2024-03-21'),
 (58, 15, 15800, 25800, 11800, 13800, 9800, 5800, 80600, '2024-03-22'),
 (59, 15, 16200, 26200, 12100, 14100, 10100, 6100, 84600, '2024-03-23');
-
--- daily log data
-INSERT INTO daily_logs (project_id, log_date, materials_used, labor_hours, machinery_hours, comments, created_by)
-VALUES
-(8, '2023-05-23', 'Cement - 50 bags; Sand - 2 loads', 10.5, 5.0, 'Foundation work completed', 'SM001'),
-(8, '2023-05-24', 'Bricks - 1000 units; Cement - 25 bags', 8.0, 4.0, 'Started wall construction', 'SM001'),
-(9, '2023-08-04', 'Iron rods - 300kg; Cement - 40 bags', 9.0, 3.5, 'Column reinforcements installed', 'SM001'),
-(9, '2023-08-05', 'Concrete mix - 2 loads', 10.0, 6.0, 'First floor slab casting done', 'SM001'),
-(10, '2023-05-25', 'Cement - 20 bags; Paint - 5 gallons', 7.5, 2.0, 'Exterior finishing', 'SM001'),
-(11, '2024-01-20', 'Tiles - 500 sqft; Cement - 15 bags', 8.0, 2.5, 'Floor tiling in progress', 'SM001'),
-(12, '2023-11-03', 'Steel rods - 200kg; Cement - 30 bags', 9.5, 4.5, 'Reinforcement for bridge segment', 'SM001'),
-(13, '2024-02-12', 'Pipes - 40m; Concrete - 1 truck', 10.0, 5.0, 'Pipeline section completed', 'SM001'),
-(14, '2023-09-08', 'Concrete - 3 trucks; Rebar - 400kg', 11.0, 6.0, '15th floor slab completed', 'SM001'),
-(15, '2024-03-22', 'Cement - 60 bags; Gravel - 2 loads', 9.0, 5.0, 'Pier foundation poured', 'SM001');
-
--- monthly report data
-INSERT INTO monthly_reports (project_id, report_month, report_year, total_cost, total_labor_cost, total_labor_hours, total_machinery_cost, total_machinery_hours, total_materials_cost, work_days, productivity_score, budget_variance, status, notes, created_by, updated_by, approved_by)
-VALUES
-(8, 5, 2023, 45000.00, 15000.00, 120.0, 12000.00, 60.0, 18000.00, 22, 85.50, 2000.00, 'Approved', 'Foundation and ground floor walls completed. Rain delays slowed progress by 2 days.', 'CBE04', 'CBE04', 'CBE04'),
-
-(9, 8, 2023, 65000.00, 20000.00, 150.0, 15000.00, 75.0, 30000.00, 25, 90.00, -5000.00, 'Approved', 'Completed first floor and initiated roof work. Material shortages for cement affected schedule.', 'CBE04', 'CBE04', 'CBE04'),
-
-(10, 5, 2023, 38000.00, 12000.00, 100.0, 8000.00, 40.0, 18000.00, 20, 95.00, 0.00, 'Approved', 'Finishing and painting phase nearly done. Minor labor shortages faced.', 'CBE07', 'CBE07', 'CBE07'),
-
-(11, 1, 2024, 25000.00, 8000.00, 80.0, 5000.00, 25.0, 12000.00, 18, 75.00, 0.00, 'Draft', 'Site cleared and foundation poured. Heavy rain delayed cement curing.', 'CBE07', 'CBE07', NULL),
-
-(12, 11, 2023, 52000.00, 18000.00, 140.0, 12000.00, 60.0, 22000.00, 24, 80.00, 5000.00, 'Approved', 'Bridge columns and deck reinforcement completed. Machinery maintenance delayed operations.', 'CBE09', 'CBE09', 'CBE09'),
-
-(13, 2, 2024, 42000.00, 15000.00, 120.0, 10000.00, 50.0, 17000.00, 22, 85.00, 0.00, 'Draft', 'Pipeline section A fully completed. Difficulty in transporting materials to hilly areas.', 'CBE04', 'CBE04', NULL),
-
-(14, 9, 2023, 68000.00, 22000.00, 180.0, 18000.00, 90.0, 28000.00, 26, 92.00, -3000.00, 'Approved', '20 floors of structure completed. High temperature affected curing speed.', 'CBE12', 'CBE12', 'CBE12'),
-
-(15, 3, 2024, 48000.00, 16000.00, 130.0, 11000.00, 55.0, 21000.00, 23, 88.00, 0.00, 'Draft', 'Pier foundation completed successfully. Delayed machinery shipment caused minor schedule slip.', 'CBE04', 'CBE04', NULL);
