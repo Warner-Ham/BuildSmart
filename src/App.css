@@ -894,3 +894,160 @@ img.hero-logo {
     display: flex;
   }
 }
+
+/* Login Manager Styles */
+.login-manager-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.login-manager-container {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  width: 90%;
+  max-width: 500px;
+  position: relative;
+}
+
+.login-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.login-manager-header h2 {
+  margin: 0;
+  color: #205c20;
+  font-size: 1.5rem;
+}
+
+.login-manager-header .close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+  padding: 0.25rem;
+}
+
+.login-manager-header .close-btn:hover {
+  color: #205c20;
+}
+
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+
+.login-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.login-form label {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.login-form input {
+  padding: 0.75rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.3s;
+}
+
+/* Staff login specific styling to match original */
+.login-form input[placeholder="Staff ID"],
+.login-form input[placeholder="Username"],
+.login-form input[placeholder="Password"] {
+  display: block;
+  width: 100%;
+  margin: 0.5rem 0;
+  padding: 0.7rem;
+  border: 1px solid #bdbdbd;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+}
+
+.login-form input:focus {
+  outline: none;
+  border-color: #205c20;
+}
+
+.login-form input:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.login-btn {
+  background: #205c20;
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 0.5rem;
+}
+
+.login-btn:hover:not(:disabled) {
+  background: #1a4d1a;
+}
+
+.login-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+/* Staff login button styling to match original */
+.staff-login-btn {
+  width: 100%;
+  margin: 1rem 0 0 0;
+  background: #205c20;
+  color: white;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.staff-login-btn:hover:not(:disabled) {
+  background: #1a4d1a;
+}
+
+.staff-login-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #d32f2f;
+  font-size: 0.9rem;
+  text-align: center;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #ffebee;
+  border-radius: 4px;
+  border: 1px solid #ffcdd2;
+}

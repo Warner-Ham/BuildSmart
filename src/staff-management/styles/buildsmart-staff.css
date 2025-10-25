@@ -1,0 +1,520 @@
+/* BuildSmart Staff Management System - Master Stylesheet */
+
+/* ========================================
+   1. CSS VARIABLES & THEME
+   ======================================== */
+:root {
+    /* Primary Green Colors - BuildSmart Brand */
+    --color-primary: #205c20;
+    --color-primary-light: #287a2c;
+    --color-primary-dark: #133a13;
+    --color-accent: #a8e063;
+    --color-accent-bright: #9AFE6A;
+
+    /* Background Colors */
+    --color-bg-light: #e8f5e9;
+    --color-bg-light-2: #c8e6c9;
+    --color-bg-light-3: #a5d6a7;
+    --color-bg-white: #ffffff;
+    --color-bg-gray: #f4f7fa;
+
+    /* Text Colors */
+    --color-text-primary: #205c20;
+    --color-text-secondary: #333333;
+    --color-text-light: #666666;
+
+    /* Border & Shadow */
+    --color-border: #a5d6a7;
+    --shadow-sm: 0 2px 8px rgba(32, 92, 32, 0.08);
+    --shadow-md: 0 4px 16px rgba(32, 92, 32, 0.12);
+    --shadow-lg: 0 8px 32px rgba(32, 92, 32, 0.18);
+    --shadow-xl: 0 12px 48px rgba(32, 92, 32, 0.24);
+
+    /* Spacing */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+
+    /* Border Radius */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 18px;
+    --radius-2xl: 22px;
+
+    /* Typography */
+    --font-family: 'Inter', 'Roboto', 'Segoe UI', Arial, sans-serif;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+}
+
+/* ========================================
+   2. GLOBAL STYLES
+   ======================================== */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: var(--font-family);
+    background: linear-gradient(135deg, var(--color-bg-light) 0%, var(--color-bg-gray) 100%);
+    color: var(--color-text-primary);
+    overflow-x: hidden;
+}
+
+/* ========================================
+   3. ANIMATIONS
+   ======================================== */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+    0% { opacity: 0; transform: translateY(40px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInLeft {
+    0% { opacity: 0; transform: translateX(-40px); }
+    100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeInRight {
+    0% { opacity: 0; transform: translateX(40px); }
+    100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes cardSlideIn {
+    0% {
+        opacity: 0;
+        transform: translateY(40px) scale(0.95) rotateX(15deg);
+    }
+    50% {
+        opacity: 0.7;
+        transform: translateY(-5px) scale(1.02) rotateX(0deg);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1) rotateX(0deg);
+    }
+}
+
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(168, 224, 99, 0.7); }
+    50% { box-shadow: 0 0 0 10px rgba(168, 224, 99, 0); }
+}
+
+/* ========================================
+   4. BUTTONS - BuildSmart Style
+   ======================================== */
+.btn-primary {
+    background: var(--color-bg-white);
+    color: var(--color-primary);
+    font-size: 1.1rem;
+    font-weight: var(--font-weight-bold);
+    padding: 0.65rem 1.5rem;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.25);
+    letter-spacing: 0.3px;
+}
+
+.btn-primary:hover {
+    background: var(--color-accent-bright);
+    color: var(--color-primary);
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 8px rgba(0, 52, 3, 0.35);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-secondary {
+    background: var(--color-primary);
+    color: var(--color-bg-white);
+    font-size: 1.1rem;
+    font-weight: var(--font-weight-bold);
+    padding: 0.65rem 1.5rem;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.25);
+}
+
+.btn-secondary:hover {
+    background: var(--color-primary-light);
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 8px rgba(0, 52, 3, 0.35);
+}
+
+.btn-danger {
+    background: #e74c3c;
+    color: var(--color-bg-white);
+    font-size: 1rem;
+    font-weight: var(--font-weight-bold);
+    padding: 0.5rem 1.2rem;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-danger:hover {
+    background: #c0392b;
+    transform: translateY(-2px);
+}
+
+/* ========================================
+   5. CARDS - BuildSmart Gradient Style
+   ======================================== */
+.card {
+    background: linear-gradient(135deg, var(--color-bg-light) 70%, var(--color-bg-light-2) 100%);
+    border: 4px solid var(--color-bg-white);
+    outline: 3px solid rgba(0, 0, 0, 0.1);
+    outline-offset: 0;
+    border-radius: var(--radius-2xl);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow-md);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: visible;
+}
+
+.card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: var(--shadow-xl);
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    border-radius: var(--radius-xl);
+    background: linear-gradient(135deg, var(--color-accent) 0%, #4cff4c 100%);
+    opacity: 0;
+    transform: scale(0.95);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: -1;
+    pointer-events: none;
+}
+
+.card:hover::before {
+    opacity: 0.3;
+    transform: scale(1);
+}
+
+/* ========================================
+   6. FORM INPUTS - BuildSmart Style
+   ======================================== */
+.form-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    font-family: var(--font-family);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: #f8fff8;
+    color: var(--color-text-primary);
+    transition: all 0.2s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(32, 92, 32, 0.1);
+}
+
+.form-label {
+    display: block;
+    font-size: 1rem;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+/* ========================================
+   7. BADGES - BuildSmart Style
+   ======================================== */
+.badge {
+    display: inline-block;
+    padding: 0.35rem 0.85rem;
+    font-size: 0.85rem;
+    font-weight: var(--font-weight-bold);
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-active {
+    background: var(--color-bg-light);
+    color: var(--color-primary);
+    border: 2px solid var(--color-accent);
+}
+
+.badge-inactive {
+    background: #e0e0e0;
+    color: #666666;
+    border: 2px solid #bdbdbd;
+}
+
+.badge-pending {
+    background: #fff8e1;
+    color: #f57f17;
+    border: 2px solid #ffb300;
+}
+
+.badge-suspended {
+    background: #ffebee;
+    color: #c62828;
+    border: 2px solid #e57373;
+}
+
+/* ========================================
+   8. NAVBAR - BuildSmart Green Gradient
+   ======================================== */
+.staff-navbar {
+    background: linear-gradient(to bottom, #287a2c 50%, #1E6821 80%, #003403 95%);
+    color: var(--color-bg-white);
+    padding: 0.4rem 2rem;
+    border-bottom: 0.2rem solid var(--color-bg-white);
+    box-shadow: 0 0.2rem 0px rgba(0, 0, 0, 1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.staff-navbar-title {
+    font-size: 1.8rem;
+    font-weight: var(--font-weight-bold);
+    letter-spacing: 1px;
+    color: var(--color-bg-white);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* ========================================
+   9. STAT CARDS
+   ======================================== */
+.stat-card {
+    background: var(--color-bg-white);
+    border: 3px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--color-accent);
+}
+
+.stat-card-value {
+    font-size: 2.5rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.stat-card-label {
+    font-size: 0.95rem;
+    color: var(--color-text-light);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ========================================
+   10. SECTIONS - BuildSmart Container Style
+   ======================================== */
+.section-container {
+    max-width: 1200px;
+    margin: var(--spacing-xl) auto;
+    padding: var(--spacing-2xl) var(--spacing-xl);
+    background: var(--color-bg-white);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-md);
+    position: relative;
+    overflow: hidden;
+}
+
+.section-container::before {
+    content: '';
+    position: absolute;
+    top: -60px;
+    left: -80px;
+    width: 220px;
+    height: 180px;
+    background: linear-gradient(120deg, var(--color-bg-light-3) 60%, var(--color-bg-light-2) 100%);
+    opacity: 0.15;
+    clip-path: polygon(0 0, 100% 0, 80% 100%, 20% 80%);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.section-container::after {
+    content: '';
+    position: absolute;
+    bottom: -40px;
+    right: -60px;
+    width: 160px;
+    height: 120px;
+    background: linear-gradient(120deg, var(--color-bg-light-3) 60%, var(--color-accent) 100%);
+    opacity: 0.15;
+    clip-path: polygon(20% 0, 70% 20%, 80% 100%, 0 80%);
+    z-index: 0;
+    pointer-events: none;
+}
+
+.section-title {
+    font-size: 2.2rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-primary);
+    margin-bottom: var(--spacing-lg);
+    letter-spacing: 1px;
+    text-shadow: 0 2px 8px rgba(232, 245, 233, 0.8);
+    position: relative;
+    z-index: 1;
+}
+
+.section-title::after {
+    content: '';
+    display: block;
+    width: 80px;
+    height: 5px;
+    margin-top: var(--spacing-sm);
+    background: linear-gradient(90deg, var(--color-accent) 0%, #4caf50 100%);
+    border-radius: 3px;
+}
+
+/* ========================================
+   11. STAFF CARDS
+   ======================================== */
+.staff-card {
+    background: linear-gradient(135deg, var(--color-bg-light) 75%, var(--color-bg-light-2) 100%);
+    border: 4px solid var(--color-bg-white);
+    outline: 3px solid rgba(0, 0, 0, 0.08);
+    outline-offset: 0;
+    border-radius: var(--radius-2xl);
+    padding: var(--spacing-lg);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.staff-card:hover {
+    transform: translateY(-8px) scale(1.03);
+    box-shadow: var(--shadow-xl);
+}
+
+.staff-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-bg-white);
+    font-size: 1.8rem;
+    font-weight: var(--font-weight-bold);
+    margin-bottom: var(--spacing-md);
+    box-shadow: 0 4px 12px rgba(32, 92, 32, 0.25);
+}
+
+/* ========================================
+   12. LOGIN FORM - BuildSmart Style
+   ======================================== */
+.login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(to bottom right, var(--color-primary) 0%, var(--color-primary-light) 50%, var(--color-primary-dark) 100%);
+    padding: var(--spacing-xl);
+}
+
+.login-card {
+    background: var(--color-bg-white);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    max-width: 450px;
+    width: 100%;
+}
+
+.login-header {
+    background: linear-gradient(to right, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    color: var(--color-bg-white);
+    padding: var(--spacing-2xl) var(--spacing-xl);
+    text-align: center;
+}
+
+.login-logo {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto var(--spacing-md);
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+}
+
+/* ========================================
+   13. RESPONSIVE DESIGN
+   ======================================== */
+@media (max-width: 768px) {
+    .section-container {
+        padding: var(--spacing-xl) var(--spacing-md);
+        margin: var(--spacing-md);
+    }
+
+    .section-title {
+        font-size: 1.8rem;
+    }
+
+    .card {
+        padding: var(--spacing-lg);
+    }
+
+    .staff-navbar {
+        padding: 0.4rem 1rem;
+    }
+}
+
+/* ========================================
+   14. UTILITY CLASSES
+   ======================================== */
+.text-primary { color: var(--color-primary); }
+.text-secondary { color: var(--color-text-secondary); }
+.text-light { color: var(--color-text-light); }
+.text-white { color: var(--color-bg-white); }
+
+.bg-primary { background: var(--color-primary); }
+.bg-light { background: var(--color-bg-light); }
+.bg-white { background: var(--color-bg-white); }
+
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+
+.rounded-sm { border-radius: var(--radius-sm); }
+.rounded-md { border-radius: var(--radius-md); }
+.rounded-lg { border-radius: var(--radius-lg); }
+.rounded-xl { border-radius: var(--radius-xl); }
+.rounded-2xl { border-radius: var(--radius-2xl); }
+
+.animate-fade-in { animation: fadeIn 0.6s ease-out; }
+.animate-fade-in-up { animation: fadeInUp 0.8s ease-out; }
+.animate-card-slide { animation: cardSlideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
