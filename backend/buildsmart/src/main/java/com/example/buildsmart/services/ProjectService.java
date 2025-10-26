@@ -32,12 +32,11 @@ public class ProjectService {
         // Create a new project from the request details
         Project newProject = new Project();
         newProject.setName(projectDetails.getName());
-        newProject.setRequest(request);
         newProject.setLocation(request.getLocation());
-        newProject.setCustomerDetails(request.getCustomerDetails());
-        newProject.setPrePlannedBudget(projectDetails.getPrePlannedBudget());
-        newProject.setStartDate(projectDetails.getStartDate());
-        newProject.setEndDate(projectDetails.getEndDate());
+        newProject.setClient(request.getClient());
+        newProject.setPre_budget(projectDetails.getPre_budget());
+        newProject.setStart_date(projectDetails.getStart_date());
+        newProject.setEnd_date(projectDetails.getEnd_date());
         newProject.setStatus("active");
 
         return ProjectRepository.save(newProject);
