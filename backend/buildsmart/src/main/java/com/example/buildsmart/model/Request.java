@@ -10,7 +10,7 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "project_requests")
-public class ProjectRequest {
+public class Request {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -20,10 +20,11 @@ public class ProjectRequest {
     private String description;
     private String status;
     private LocalDate requestDate;
+    private Boolean deleted = false;
 
-    public ProjectRequest() {}
+    public Request() {}
 
-    public ProjectRequest(String client, String email, String location, String description) {
+    public Request(String client, String email, String location, String description) {
         this.client = client;
         this.email = email;
         this.location = location;
@@ -40,6 +41,10 @@ public class ProjectRequest {
     public void setLocation(String location) { this.location = location; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
     public LocalDate getRequestDate() { return requestDate; }
     public void setRequestDate(LocalDate requestDate) { this.requestDate = requestDate; }
+    public Boolean getDeleted() { return deleted; }
+    public void setDeleted(Boolean deleted) { this.deleted = deleted; }
 }
