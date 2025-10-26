@@ -44,63 +44,63 @@ public class MonthlyReportScheduler {
     public void generateMonthlyReportsForAllProjects() {
         try {
             System.out.println("Starting automatic monthly report generation...");
-            
+
             // Get the previous month (since we're running on the last day)
             LocalDate today = LocalDate.now();
             YearMonth previousMonth = YearMonth.from(today.minusMonths(1));
-            
+
             int year = previousMonth.getYear();
             int month = previousMonth.getMonthValue();
-            
+
             System.out.println("Generating reports for: " + year + "/" + month);
-            
+
             // Get all active projects
             List<Project> activeProjects = projectRepository.findByStatus("In Progress");
-            
+
             int reportsGenerated = 0;
             int reportsSkipped = 0;
-            
+
             for (Project project : activeProjects) {
                 try {
                     // Check if report already exists for this project and month
                     Optional<MonthlyReport> existingReport = monthlyReportRepository
                             .findByProjectIdAndReportYearAndReportMonth(project.getId(), year, month);
-                    
+
                     if (existingReport.isPresent()) {
                         System.out.println("Report already exists for project: " + project.getName());
                         reportsSkipped++;
                         continue;
                     }
-                    
+
                     // Check if there are daily logs for this project in the specified month
                     LocalDate startDate = LocalDate.of(year, month, 1);
                     LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
-                    
+
                     List<com.example.buildsmart.model.DailyLog> dailyLogs = dailyLogRepository
                             .findByProjectIdAndLogDateBetween(project.getId(), startDate, endDate);
-                    
+
                     if (dailyLogs.isEmpty()) {
                         System.out.println("No daily logs found for project: " + project.getName());
                         reportsSkipped++;
                         continue;
                     }
-                    
+
                     // Generate the monthly report
                     monthlyReportService.generateMonthlyReportFromDailyLogs(
                             project.getId(), year, month, "System Auto-Generator"
                     );
-                    
+
                     System.out.println("Generated monthly report for project: " + project.getName());
                     reportsGenerated++;
-                    
+
                 } catch (Exception e) {
                     System.err.println("Error generating report for project " + project.getName() + ": " + e.getMessage());
                     e.printStackTrace();
                 }
             }
-            
+
             System.out.println("Monthly report generation completed. Generated: " + reportsGenerated + ", Skipped: " + reportsSkipped);
-            
+
         } catch (Exception e) {
             System.err.println("Error in monthly report generation scheduler: " + e.getMessage());
             e.printStackTrace();
@@ -114,54 +114,54 @@ public class MonthlyReportScheduler {
     public void generateMonthlyReportsForMonth(int year, int month) {
         try {
             System.out.println("Manual monthly report generation for: " + year + "/" + month);
-            
+
             // Get all active projects
             List<Project> activeProjects = projectRepository.findByStatus("In Progress");
-            
+
             int reportsGenerated = 0;
             int reportsSkipped = 0;
-            
+
             for (Project project : activeProjects) {
                 try {
                     // Check if report already exists for this project and month
                     Optional<MonthlyReport> existingReport = monthlyReportRepository
                             .findByProjectIdAndReportYearAndReportMonth(project.getId(), year, month);
-                    
+
                     if (existingReport.isPresent()) {
                         System.out.println("Report already exists for project: " + project.getName());
                         reportsSkipped++;
                         continue;
                     }
-                    
+
                     // Check if there are daily logs for this project in the specified month
                     LocalDate startDate = LocalDate.of(year, month, 1);
                     LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
-                    
+
                     List<com.example.buildsmart.model.DailyLog> dailyLogs = dailyLogRepository
                             .findByProjectIdAndLogDateBetween(project.getId(), startDate, endDate);
-                    
+
                     if (dailyLogs.isEmpty()) {
                         System.out.println("No daily logs found for project: " + project.getName());
                         reportsSkipped++;
                         continue;
                     }
-                    
+
                     // Generate the monthly report
                     monthlyReportService.generateMonthlyReportFromDailyLogs(
                             project.getId(), year, month, "Manual Generator"
                     );
-                    
+
                     System.out.println("Generated monthly report for project: " + project.getName());
                     reportsGenerated++;
-                    
+
                 } catch (Exception e) {
                     System.err.println("Error generating report for project " + project.getName() + ": " + e.getMessage());
                     e.printStackTrace();
                 }
             }
-            
+
             System.out.println("Manual monthly report generation completed. Generated: " + reportsGenerated + ", Skipped: " + reportsSkipped);
-            
+
         } catch (Exception e) {
             System.err.println("Error in manual monthly report generation: " + e.getMessage());
             e.printStackTrace();
@@ -175,31 +175,31 @@ public class MonthlyReportScheduler {
     public void generateMonthlyReportForProject(Long projectId, int year, int month, String createdBy) {
         try {
             System.out.println("Generating monthly report for project ID: " + projectId + " for " + year + "/" + month);
-            
+
             // Check if report already exists
             Optional<MonthlyReport> existingReport = monthlyReportRepository
                     .findByProjectIdAndReportYearAndReportMonth(projectId, year, month);
-            
+
             if (existingReport.isPresent()) {
                 throw new RuntimeException("Monthly report already exists for this project and period");
             }
-            
+
             // Check if there are daily logs for this project in the specified month
             LocalDate startDate = LocalDate.of(year, month, 1);
             LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
-            
+
             List<com.example.buildsmart.model.DailyLog> dailyLogs = dailyLogRepository
                     .findByProjectIdAndLogDateBetween(projectId, startDate, endDate);
-            
+
             if (dailyLogs.isEmpty()) {
                 throw new RuntimeException("No daily logs found for the specified period");
             }
-            
+
             // Generate the monthly report
             monthlyReportService.generateMonthlyReportFromDailyLogs(projectId, year, month, createdBy);
-            
+
             System.out.println("Successfully generated monthly report for project ID: " + projectId);
-            
+
         } catch (Exception e) {
             System.err.println("Error generating monthly report for project ID " + projectId + ": " + e.getMessage());
             throw e;

@@ -401,30 +401,45 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
 
     // Analytics helper functions
     const calculateCostBreakdown = (report) => {
-        // Check if we have individual cost breakdowns (excluding materials)
+        // Check if we have individual cost breakdowns for all 5 categories
         const hasDetailedCosts = report.totalLaborCost !== undefined ||
-            report.totalMachineryCost !== undefined;
+            report.totalMachineryCost !== undefined ||
+            report.totalMaterialsCost !== undefined ||
+            report.totalSubcontractorsCost !== undefined ||
+            report.totalOtherCosts !== undefined;
 
         if (hasDetailedCosts) {
+            const materials = Number(report.totalMaterialsCost) || 0;
             const labor = Number(report.totalLaborCost) || 0;
             const machinery = Number(report.totalMachineryCost) || 0;
-            const total = labor + machinery;
+            const subcontractors = Number(report.totalSubcontractorsCost) || 0;
+            const other = Number(report.totalOtherCosts) || 0;
+            const total = materials + labor + machinery + subcontractors + other;
 
             return {
+                materials: { value: materials, percentage: total > 0 ? (materials / total * 100) : 0 },
                 labor: { value: labor, percentage: total > 0 ? (labor / total * 100) : 0 },
                 machinery: { value: machinery, percentage: total > 0 ? (machinery / total * 100) : 0 },
+                subcontractors: { value: subcontractors, percentage: total > 0 ? (subcontractors / total * 100) : 0 },
+                other: { value: other, percentage: total > 0 ? (other / total * 100) : 0 },
                 total,
                 hasDetailedData: true
             };
         } else {
             // Fallback: estimate breakdown from total cost if detailed costs not available
             const totalCost = Number(report.totalCost) || 0;
-            const estimatedLabor = totalCost * 0.6;    // Estimate 60% labor
-            const estimatedMachinery = totalCost * 0.4; // Estimate 40% machinery
+            const estimatedMaterials = totalCost * 0.25;     // Estimate 25% materials
+            const estimatedLabor = totalCost * 0.35;         // Estimate 35% labor
+            const estimatedMachinery = totalCost * 0.20;     // Estimate 20% machinery
+            const estimatedSubcontractors = totalCost * 0.15; // Estimate 15% subcontractors
+            const estimatedOther = totalCost * 0.05;         // Estimate 5% other
 
             return {
-                labor: { value: estimatedLabor, percentage: 60 },
-                machinery: { value: estimatedMachinery, percentage: 40 },
+                materials: { value: estimatedMaterials, percentage: 25 },
+                labor: { value: estimatedLabor, percentage: 35 },
+                machinery: { value: estimatedMachinery, percentage: 20 },
+                subcontractors: { value: estimatedSubcontractors, percentage: 15 },
+                other: { value: estimatedOther, percentage: 5 },
                 total: totalCost,
                 hasDetailedData: false
             };
@@ -457,7 +472,7 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
         // Calculate efficiency as percentage based on resource utilization
         // Labor efficiency: percentage of labor hours vs total hours
         const laborEfficiency = totalHours > 0 ? (laborHours / totalHours) * 100 : 0;
-        
+
         // Machinery efficiency: percentage of machinery hours vs total hours
         const machineryEfficiency = totalHours > 0 ? (machineryHours / totalHours) * 100 : 0;
 
@@ -816,9 +831,7 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
                                 <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>
                                     Total Cost
                                 </th>
-                                <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>
-                                    Productivity
-                                </th>
+
                                 <th style={{ padding: '1rem', textAlign: 'left', borderBottom: '1px solid #dee2e6' }}>
                                     Created
                                 </th>
@@ -854,9 +867,7 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
                                     <td style={{ padding: '1rem' }}>
                                         Rs. {report.totalCost?.toLocaleString() || 'N/A'}
                                     </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        {report.productivityScore ? `${report.productivityScore.toFixed(1)}%` : 'N/A'}
-                                    </td>
+
                                     <td style={{ padding: '1rem' }}>
                                         {new Date(report.createdAt).toLocaleDateString()}
                                     </td>
@@ -1184,12 +1195,6 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
                             <strong>Total Cost:</strong> Rs. {viewingReport.totalCost?.toLocaleString() || 'N/A'}
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
-                            <strong>Budget Variance:</strong> Rs. {viewingReport.budgetVariance?.toLocaleString() || 'N/A'}
-                        </div>
-                        <div style={{ marginBottom: '1rem' }}>
-                            <strong>Productivity Score:</strong> {viewingReport.productivityScore || 'N/A'}%
-                        </div>
-                        <div style={{ marginBottom: '1rem' }}>
                             <strong>Created By:</strong> {viewingReport.createdBy || 'N/A'}
                         </div>
 
@@ -1247,10 +1252,10 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
                                             }
 
                                             const data = {
-                                                labels: ['Labor', 'Machinery'],
+                                                labels: ['Materials', 'Labor', 'Machinery', 'Subcontractors', 'Other'],
                                                 datasets: [{
-                                                    data: [breakdown.labor.value, breakdown.machinery.value],
-                                                    backgroundColor: ['#3498db', '#f39c12'],
+                                                    data: [breakdown.materials.value, breakdown.labor.value, breakdown.machinery.value, breakdown.subcontractors.value, breakdown.other.value],
+                                                    backgroundColor: ['#e74c3c', '#3498db', '#f39c12', '#9b59b6', '#1abc9c'],
                                                     borderWidth: 0
                                                 }]
                                             };
@@ -1271,42 +1276,6 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
                                                 }
                                             };
                                             return <Pie data={data} options={options} />;
-                                        })()}
-                                    </div>
-
-                                    {/* Resource Utilization */}
-                                    <div style={{ padding: '1rem', background: 'white', border: '1px solid #eee', borderRadius: '8px' }}>
-                                        <h5 style={{ marginBottom: '1rem', color: '#205c20', textAlign: 'center' }}> Resource Utilization</h5>
-                                        {(() => {
-                                            const utilization = calculateResourceUtilization(viewingReport);
-                                            if (utilization.totalHours === 0) {
-                                                return <div style={{ textAlign: 'center', color: '#666', padding: '2rem' }}>No hours data available</div>;
-                                            }
-
-                                            const data = {
-                                                labels: ['Labor Hours', 'Machinery Hours'],
-                                                datasets: [{
-                                                    data: [utilization.laborHours, utilization.machineryHours],
-                                                    backgroundColor: ['#27ae60', '#8e44ad'],
-                                                    borderWidth: 0
-                                                }]
-                                            };
-                                            const options = {
-                                                plugins: {
-                                                    legend: { position: 'bottom' },
-                                                    tooltip: {
-                                                        callbacks: {
-                                                            label: (ctx) => {
-                                                                const label = ctx.label;
-                                                                const value = Number(ctx.raw);
-                                                                const percentage = label === 'Labor Hours' ? utilization.laborPercentage : utilization.machineryPercentage;
-                                                                return `${label}: ${value.toFixed(1)}h (${percentage.toFixed(1)}%)`;
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            };
-                                            return <Doughnut data={data} options={options} />;
                                         })()}
                                     </div>
 
@@ -1358,34 +1327,39 @@ function MonthlyReports({ loggedInRole, loggedInUser }) {
                                         })()}
                                     </div>
 
-                                    {/* Productivity Score */}
+                                    {/* Resource Utilization */}
                                     <div style={{ padding: '1rem', background: 'white', border: '1px solid #eee', borderRadius: '8px' }}>
-                                        <h5 style={{ marginBottom: '1rem', color: '#205c20', textAlign: 'center' }}> Productivity Score</h5>
+                                        <h5 style={{ marginBottom: '1rem', color: '#205c20', textAlign: 'center' }}> Resource Utilization</h5>
                                         {(() => {
-                                            const productivity = Math.max(0, Math.min(100, Number(viewingReport.productivityScore) || 0));
+                                            const utilization = calculateResourceUtilization(viewingReport);
+                                            if (utilization.totalHours === 0) {
+                                                return <div style={{ textAlign: 'center', color: '#666', padding: '2rem' }}>No hours data available</div>;
+                                            }
+
                                             const data = {
-                                                labels: ['Score', 'Remaining'],
+                                                labels: ['Labor Hours', 'Machinery Hours'],
                                                 datasets: [{
-                                                    data: [productivity, 100 - productivity],
-                                                    backgroundColor: ['#27ae60', '#e9ecef'],
+                                                    data: [utilization.laborHours, utilization.machineryHours],
+                                                    backgroundColor: ['#27ae60', '#8e44ad'],
                                                     borderWidth: 0
                                                 }]
                                             };
                                             const options = {
                                                 plugins: {
-                                                    legend: { display: false },
-                                                    tooltip: { enabled: true }
-                                                },
-                                                cutout: '70%'
+                                                    legend: { position: 'bottom' },
+                                                    tooltip: {
+                                                        callbacks: {
+                                                            label: (ctx) => {
+                                                                const label = ctx.label;
+                                                                const value = Number(ctx.raw);
+                                                                const percentage = label === 'Labor Hours' ? utilization.laborPercentage : utilization.machineryPercentage;
+                                                                return `${label}: ${value.toFixed(1)}h (${percentage.toFixed(1)}%)`;
+                                                            }
+                                                        }
+                                                    }
+                                                }
                                             };
-                                            return (
-                                                <div style={{ position: 'relative', width: '100%', maxWidth: 200, margin: '0 auto' }}>
-                                                    <Doughnut data={data} options={options} />
-                                                    <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontWeight: 700, color: '#205c20', fontSize: '1.2rem' }}>
-                                                        {productivity.toFixed(0)}%
-                                                    </div>
-                                                </div>
-                                            );
+                                            return <Doughnut data={data} options={options} />;
                                         })()}
                                     </div>
 

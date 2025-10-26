@@ -6,7 +6,7 @@ USE ceb;
 
 -- staff table
 CREATE TABLE staff (
-    id VARCHAR(30) PRIMARY KEY, -- Unique staff ID
+    id VARCHAR(255) PRIMARY KEY, -- Unique staff ID
     username VARCHAR(50) NOT NULL, -- Staff username
     password VARCHAR(50) NOT NULL, -- Staff password
     email VARCHAR(50), -- Staff email
@@ -69,30 +69,35 @@ CREATE TABLE IF NOT EXISTS daily_logs (
     project_id INT NOT NULL,
     log_date DATE NOT NULL,
     materials_used TEXT,
-    labor_hours DOUBLE,
-    machinery_hours DOUBLE,
+    labor_hours DOUBLE DEFAULT 0.0,
+    machinery_hours DOUBLE DEFAULT 0.0,
     comments TEXT,
     created_by VARCHAR(100),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE
+    FOREIGN KEY (project_id) REFERENCES project(id) ON DELETE CASCADE,
+    INDEX idx_project_log_date (project_id, log_date)
 );
 
 
 -- Monthly Report table
 -- Note: created_by, updated_by, and approved_by have foreign key constraints to staff table
 -- All staff references can be NULL to handle cases where staff might be deleted
+-- IMPORTANT: total_labor_hours and total_machinery_hours are auto-calculated from daily_logs table
+-- when monthly reports are generated using MonthlyReportService.generateMonthlyReportFromDailyLogs()
 
 CREATE TABLE IF NOT EXISTS monthly_reports (
     id INT AUTO_INCREMENT PRIMARY KEY,
     project_id INT NOT NULL,
     report_year INTEGER NOT NULL,
     report_month INTEGER NOT NULL,
-    total_materials_cost DECIMAL(10,2) DEFAULT 0.00,
+	total_materials_cost DECIMAL(10,2) DEFAULT 0.00,
     total_labor_cost DECIMAL(10,2) DEFAULT 0.00,
     total_machinery_cost DECIMAL(10,2) DEFAULT 0.00,
+    total_subcontractors_cost DECIMAL(10,2) DEFAULT 0.00,
+    total_other_costs DECIMAL(10,2) DEFAULT 0.00,
     total_cost DECIMAL(10,2) DEFAULT 0.00,
-    total_labor_hours DOUBLE DEFAULT 0.0,
-    total_machinery_hours DOUBLE DEFAULT 0.0,
+    total_labor_hours DOUBLE DEFAULT 0.0,  -- Sum of labor_hours from daily_logs for this month
+    total_machinery_hours DOUBLE DEFAULT 0.0,  -- Sum of machinery_hours from daily_logs for this month
     work_days INTEGER DEFAULT 0,
     productivity_score DOUBLE DEFAULT 0.0,
     budget_variance DECIMAL(10,2) DEFAULT 0.00,
@@ -252,7 +257,7 @@ VALUES
 (15, '2024-03-22', 'Cement - 60 bags; Gravel - 2 loads', 9.0, 5.0, 'Pier foundation poured', 'SM001');
 
 -- monthly report data
-INSERT INTO monthly_reports (project_id, report_month, report_year, total_cost, total_labor_cost, total_labor_hours, total_machinery_cost, total_machinery_hours, total_materials_cost, work_days, productivity_score, budget_variance, status, notes, created_by, updated_by, approved_by)
+INSERT INTO monthly_reports (project_id, report_month, report_year, total_cost, total_labor_cost, total_labor_hours, total_machinery_cost, total_machinery_hours, materials_used, work_days, productivity_score, budget_variance, status, notes, created_by, updated_by, approved_by)
 VALUES
 (8, 5, 2023, 45000.00, 15000.00, 120.0, 12000.00, 60.0, 18000.00, 22, 85.50, 2000.00, 'Approved', 'Foundation and ground floor walls completed. Rain delays slowed progress by 2 days.', 'CBE04', 'CBE04', 'CBE04'),
 
@@ -269,3 +274,10 @@ VALUES
 (14, 9, 2023, 68000.00, 22000.00, 180.0, 18000.00, 90.0, 28000.00, 26, 92.00, -3000.00, 'Approved', '20 floors of structure completed. High temperature affected curing speed.', 'CBE12', 'CBE12', 'CBE12'),
 
 (15, 3, 2024, 48000.00, 16000.00, 130.0, 11000.00, 55.0, 21000.00, 23, 88.00, 0.00, 'Draft', 'Pier foundation completed successfully. Delayed machinery shipment caused minor schedule slip.', 'CBE04', 'CBE04', NULL);
+
+-- Database setup completed successfully
+-- Foreign key constraints have been configured to handle NULL values gracefully
+-- All staff references (created_by, updated_by, approved_by, changed_by) now use ON DELETE SET NULL
+-- This prevents foreign key constraint failures when staff members are deleted
+-- The application can now handle cases where staff IDs don't exist in the staff table
+-- IMPORTANT: The application should either provide valid staff IDs or NULL for staff reference fields

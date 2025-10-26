@@ -1,8 +1,16 @@
 package com.example.buildsmart.model;
 
-import jakarta.persistence.*;
-import java.time.LocalDateTime;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "monthly_reports")
@@ -29,6 +37,12 @@ public class MonthlyReport {
 
     @Column(name = "total_machinery_cost", precision = 10, scale = 2)
     private BigDecimal totalMachineryCost;
+
+    @Column(name = "total_subcontractors_cost", precision = 10, scale = 2)
+    private BigDecimal totalSubcontractorsCost;
+
+    @Column(name = "total_other_costs", precision = 10, scale = 2)
+    private BigDecimal totalOtherCosts;
 
     @Column(name = "total_cost", precision = 10, scale = 2)
     private BigDecimal totalCost;
@@ -141,6 +155,22 @@ public class MonthlyReport {
 
     public void setTotalMachineryCost(BigDecimal totalMachineryCost) {
         this.totalMachineryCost = totalMachineryCost;
+    }
+
+    public BigDecimal getTotalSubcontractorsCost() {
+        return totalSubcontractorsCost;
+    }
+
+    public void setTotalSubcontractorsCost(BigDecimal totalSubcontractorsCost) {
+        this.totalSubcontractorsCost = totalSubcontractorsCost;
+    }
+
+    public BigDecimal getTotalOtherCosts() {
+        return totalOtherCosts;
+    }
+
+    public void setTotalOtherCosts(BigDecimal totalOtherCosts) {
+        this.totalOtherCosts = totalOtherCosts;
     }
 
     public BigDecimal getTotalCost() {
@@ -260,8 +290,10 @@ public class MonthlyReport {
         BigDecimal materials = totalMaterialsCost != null ? totalMaterialsCost : BigDecimal.ZERO;
         BigDecimal labor = totalLaborCost != null ? totalLaborCost : BigDecimal.ZERO;
         BigDecimal machinery = totalMachineryCost != null ? totalMachineryCost : BigDecimal.ZERO;
-        
-        this.totalCost = materials.add(labor).add(machinery);
+        BigDecimal subcontractors = totalSubcontractorsCost != null ? totalSubcontractorsCost : BigDecimal.ZERO;
+        BigDecimal otherCosts = totalOtherCosts != null ? totalOtherCosts : BigDecimal.ZERO;
+
+        this.totalCost = materials.add(labor).add(machinery).add(subcontractors).add(otherCosts);
     }
 
     public void updateTimestamp(String updatedBy) {

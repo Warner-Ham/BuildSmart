@@ -1,5 +1,19 @@
 package com.example.buildsmart.service;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.example.buildsmart.dto.MonthlyReportDTO;
 import com.example.buildsmart.model.DailyLog;
 import com.example.buildsmart.repository.DailyLogRepository;
@@ -7,23 +21,10 @@ import com.example.buildsmart.repository.MonthlyReportRepository;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
 import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.element.Paragraph;
 import com.itextpdf.layout.element.Table;
-import com.itextpdf.layout.element.Cell;
 import com.itextpdf.layout.properties.TextAlignment;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 public class PDFReportService {
@@ -36,7 +37,7 @@ public class PDFReportService {
 
     public byte[] generateMonthlyReportPDF(MonthlyReportDTO report) throws IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        
+
         try (PdfWriter writer = new PdfWriter(outputStream);
              PdfDocument pdf = new PdfDocument(writer);
              Document document = new Document(pdf)) {
@@ -58,77 +59,80 @@ public class PDFReportService {
 
             // Create main information table
             Table infoTable = new Table(2).useAllAvailableWidth();
-            
+
             // Project Information
             infoTable.addCell(createHeaderCell("Project Information"));
             infoTable.addCell(createDataCell(""));
-            
+
             infoTable.addCell(createLabelCell("Project Name:"));
             infoTable.addCell(createDataCell(report.getProjectName() != null ? report.getProjectName() : "N/A"));
-            
+
             infoTable.addCell(createLabelCell("Project Location:"));
             infoTable.addCell(createDataCell(report.getProjectLocation() != null ? report.getProjectLocation() : "N/A"));
-            
+
             infoTable.addCell(createLabelCell("Project Status:"));
             infoTable.addCell(createDataCell(report.getProjectStatus() != null ? report.getProjectStatus() : "N/A"));
 
             // Report Period
             infoTable.addCell(createHeaderCell("Report Period"));
             infoTable.addCell(createDataCell(""));
-            
+
             infoTable.addCell(createLabelCell("Month/Year:"));
             String monthYear = getMonthName(report.getReportMonth()) + " " + report.getReportYear();
             infoTable.addCell(createDataCell(monthYear));
-            
+
             infoTable.addCell(createLabelCell("Report Status:"));
             infoTable.addCell(createDataCell(report.getStatus()));
 
             // Financial Information
             infoTable.addCell(createHeaderCell("Financial Summary"));
             infoTable.addCell(createDataCell(""));
-            
+
+            infoTable.addCell(createLabelCell("Total Materials Cost:"));
+            infoTable.addCell(createDataCell(formatCurrency(report.getTotalMaterialsCost())));
+
             infoTable.addCell(createLabelCell("Total Labor Cost:"));
             infoTable.addCell(createDataCell(formatCurrency(report.getTotalLaborCost())));
-            
+
             infoTable.addCell(createLabelCell("Total Machinery Cost:"));
             infoTable.addCell(createDataCell(formatCurrency(report.getTotalMachineryCost())));
-            
+
+            infoTable.addCell(createLabelCell("Total Subcontractors Cost:"));
+            infoTable.addCell(createDataCell(formatCurrency(report.getTotalSubcontractorsCost())));
+
+            infoTable.addCell(createLabelCell("Total Other Costs:"));
+            infoTable.addCell(createDataCell(formatCurrency(report.getTotalOtherCosts())));
+
             infoTable.addCell(createLabelCell("Total Cost:"));
             infoTable.addCell(createDataCell(formatCurrency(report.getTotalCost())));
-            
-            infoTable.addCell(createLabelCell("Budget Variance:"));
-            infoTable.addCell(createDataCell(formatCurrency(report.getBudgetVariance())));
 
             // Performance Metrics
             infoTable.addCell(createHeaderCell("Performance Metrics"));
             infoTable.addCell(createDataCell(""));
-            
+
             infoTable.addCell(createLabelCell("Total Labor Hours:"));
             infoTable.addCell(createDataCell(formatHours(report.getTotalLaborHours())));
-            
+
             infoTable.addCell(createLabelCell("Total Machinery Hours:"));
             infoTable.addCell(createDataCell(formatHours(report.getTotalMachineryHours())));
-            
+
             infoTable.addCell(createLabelCell("Work Days:"));
             infoTable.addCell(createDataCell(report.getWorkDays() != null ? report.getWorkDays().toString() : "N/A"));
-            
-            infoTable.addCell(createLabelCell("Productivity Score:"));
-            infoTable.addCell(createDataCell(formatPercentage(report.getProductivityScore())));
 
             // Report Metadata
             infoTable.addCell(createHeaderCell("Report Details"));
             infoTable.addCell(createDataCell(""));
-            
+
             infoTable.addCell(createLabelCell("Created By:"));
             infoTable.addCell(createDataCell(report.getCreatedBy() != null ? report.getCreatedBy() : "N/A"));
-            
+
             infoTable.addCell(createLabelCell("Created At:"));
             infoTable.addCell(createDataCell(formatDateTime(report.getCreatedAt())));
-            
+
             if (report.getApprovedBy() != null) {
                 infoTable.addCell(createLabelCell("Approved By:"));
                 infoTable.addCell(createDataCell(report.getApprovedBy()));
-                
+
                 infoTable.addCell(createLabelCell("Approved At:"));
                 infoTable.addCell(createDataCell(formatDateTime(report.getApprovedAt())));
             }
@@ -139,7 +143,6 @@ public class PDFReportService {
             addCostBreakdownAnalysis(document, report);
             addProductivityAnalysis(document, report);
             addDailyPerformanceAnalysis(document, report);
-            addResourceUtilizationAnalysis(document, report);
             addMaterialsAnalysis(document, report);
             addComparativeAnalysis(document, report);
             addEfficiencyMetrics(document, report);
@@ -152,7 +155,7 @@ public class PDFReportService {
                         .setBold()
                         .setMarginTop(20);
                 document.add(notesHeader);
-                
+
                 Paragraph notes = new Paragraph(report.getNotes())
                         .setMarginTop(10)
                         .setMarginBottom(20);
@@ -167,7 +170,7 @@ public class PDFReportService {
             document.add(footer);
 
         }
-        
+
         return outputStream.toByteArray();
     }
 
@@ -213,8 +216,8 @@ public class PDFReportService {
     private String getMonthName(Integer month) {
         if (month == null) return "N/A";
         String[] months = {
-            "January", "February", "March", "April", "May", "June",
-            "July", "August", "September", "October", "November", "December"
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
         };
         return months[month - 1];
     }
@@ -237,6 +240,13 @@ public class PDFReportService {
 
         BigDecimal totalCost = report.getTotalCost();
         if (totalCost != null && totalCost.compareTo(BigDecimal.ZERO) > 0) {
+            // Materials Cost
+            BigDecimal materialsCost = report.getTotalMaterialsCost() != null ? report.getTotalMaterialsCost() : BigDecimal.ZERO;
+            BigDecimal materialsPercentage = materialsCost.divide(totalCost, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+            costTable.addCell(createDataCell("Materials Cost"));
+            costTable.addCell(createDataCell(formatCurrency(materialsCost)));
+            costTable.addCell(createDataCell(formatPercentage(materialsPercentage.doubleValue())));
+
             // Labor Cost
             BigDecimal laborCost = report.getTotalLaborCost() != null ? report.getTotalLaborCost() : BigDecimal.ZERO;
             BigDecimal laborPercentage = laborCost.divide(totalCost, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
@@ -251,6 +261,20 @@ public class PDFReportService {
             costTable.addCell(createDataCell(formatCurrency(machineryCost)));
             costTable.addCell(createDataCell(formatPercentage(machineryPercentage.doubleValue())));
 
+            // Subcontractors Cost
+            BigDecimal subcontractorsCost = report.getTotalSubcontractorsCost() != null ? report.getTotalSubcontractorsCost() : BigDecimal.ZERO;
+            BigDecimal subcontractorsPercentage = subcontractorsCost.divide(totalCost, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+            costTable.addCell(createDataCell("Subcontractors Cost"));
+            costTable.addCell(createDataCell(formatCurrency(subcontractorsCost)));
+            costTable.addCell(createDataCell(formatPercentage(subcontractorsPercentage.doubleValue())));
+
+            // Other Costs
+            BigDecimal otherCosts = report.getTotalOtherCosts() != null ? report.getTotalOtherCosts() : BigDecimal.ZERO;
+            BigDecimal otherCostsPercentage = otherCosts.divide(totalCost, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+            costTable.addCell(createDataCell("Other Costs"));
+            costTable.addCell(createDataCell(formatCurrency(otherCosts)));
+            costTable.addCell(createDataCell(formatPercentage(otherCostsPercentage.doubleValue())));
+
             // Total
             costTable.addCell(createHeaderCell("TOTAL"));
             costTable.addCell(createHeaderCell(formatCurrency(totalCost)));
@@ -261,10 +285,13 @@ public class PDFReportService {
 
         // Cost insights
         if (totalCost != null && totalCost.compareTo(BigDecimal.ZERO) > 0) {
+            BigDecimal materialsCost = report.getTotalMaterialsCost() != null ? report.getTotalMaterialsCost() : BigDecimal.ZERO;
             BigDecimal laborCost = report.getTotalLaborCost() != null ? report.getTotalLaborCost() : BigDecimal.ZERO;
             BigDecimal machineryCost = report.getTotalMachineryCost() != null ? report.getTotalMachineryCost() : BigDecimal.ZERO;
-            
-            String costInsight = generateCostInsight(laborCost, machineryCost, totalCost);
+            BigDecimal subcontractorsCost = report.getTotalSubcontractorsCost() != null ? report.getTotalSubcontractorsCost() : BigDecimal.ZERO;
+            BigDecimal otherCosts = report.getTotalOtherCosts() != null ? report.getTotalOtherCosts() : BigDecimal.ZERO;
+
+            String costInsight = generateCostInsight(materialsCost, laborCost, machineryCost, subcontractorsCost, otherCosts, totalCost);
             if (!costInsight.isEmpty()) {
                 Paragraph insight = new Paragraph("Cost Insight: " + costInsight)
                         .setItalic()
@@ -288,14 +315,10 @@ public class PDFReportService {
         productivityTable.addCell(createHeaderCell("Metric"));
         productivityTable.addCell(createHeaderCell("Value"));
 
-        // Productivity Score
-        productivityTable.addCell(createLabelCell("Overall Productivity Score:"));
-        productivityTable.addCell(createDataCell(formatPercentage(report.getProductivityScore())));
-
         // Average Daily Hours
         if (report.getWorkDays() != null && report.getWorkDays() > 0) {
-            Double totalHours = (report.getTotalLaborHours() != null ? report.getTotalLaborHours() : 0.0) + 
-                               (report.getTotalMachineryHours() != null ? report.getTotalMachineryHours() : 0.0);
+            Double totalHours = (report.getTotalLaborHours() != null ? report.getTotalLaborHours() : 0.0) +
+                    (report.getTotalMachineryHours() != null ? report.getTotalMachineryHours() : 0.0);
             Double avgDailyHours = totalHours / report.getWorkDays();
             productivityTable.addCell(createLabelCell("Average Daily Hours:"));
             productivityTable.addCell(createDataCell(String.format("%.2f hours/day", avgDailyHours)));
@@ -378,10 +401,6 @@ public class PDFReportService {
             if (lowDay != null) {
                 insights.add("• Lowest performance day: " + lowDay + " (" + String.format("%.2f", minDailyHours) + " hours)\n");
             }
-            if (maxDailyHours > 0 && minDailyHours < Double.MAX_VALUE) {
-                Double variance = ((maxDailyHours - minDailyHours) / maxDailyHours) * 100;
-                insights.add("• Daily performance variance: " + String.format("%.1f", variance) + "%\n");
-            }
             insights.setMarginTop(10).setFontSize(10);
             document.add(insights);
         } else {
@@ -391,60 +410,7 @@ public class PDFReportService {
         }
     }
 
-    private void addResourceUtilizationAnalysis(Document document, MonthlyReportDTO report) {
-        document.add(new Paragraph("\n"));
-        Paragraph sectionHeader = new Paragraph("RESOURCE UTILIZATION ANALYSIS")
-                .setBold()
-                .setFontSize(14)
-                .setMarginTop(20)
-                .setMarginBottom(10);
-        document.add(sectionHeader);
 
-        Table resourceTable = new Table(3).useAllAvailableWidth();
-        resourceTable.addCell(createHeaderCell("Resource Type"));
-        resourceTable.addCell(createHeaderCell("Hours"));
-        resourceTable.addCell(createHeaderCell("Cost per Hour"));
-
-        // Labor analysis
-        if (report.getTotalLaborHours() != null && report.getTotalLaborHours() > 0) {
-            resourceTable.addCell(createDataCell("Labor"));
-            resourceTable.addCell(createDataCell(formatHours(report.getTotalLaborHours())));
-            
-            BigDecimal laborCost = report.getTotalLaborCost() != null ? report.getTotalLaborCost() : BigDecimal.ZERO;
-            BigDecimal laborCostPerHour = laborCost.divide(BigDecimal.valueOf(report.getTotalLaborHours()), 2, RoundingMode.HALF_UP);
-            resourceTable.addCell(createDataCell(formatCurrency(laborCostPerHour) + "/hr"));
-        }
-
-        // Machinery analysis
-        if (report.getTotalMachineryHours() != null && report.getTotalMachineryHours() > 0) {
-            resourceTable.addCell(createDataCell("Machinery"));
-            resourceTable.addCell(createDataCell(formatHours(report.getTotalMachineryHours())));
-            
-            BigDecimal machineryCost = report.getTotalMachineryCost() != null ? report.getTotalMachineryCost() : BigDecimal.ZERO;
-            BigDecimal machineryCostPerHour = machineryCost.divide(BigDecimal.valueOf(report.getTotalMachineryHours()), 2, RoundingMode.HALF_UP);
-            resourceTable.addCell(createDataCell(formatCurrency(machineryCostPerHour) + "/hr"));
-        }
-
-        document.add(resourceTable);
-
-        // Resource balance analysis
-        if (report.getTotalLaborHours() != null && report.getTotalMachineryHours() != null) {
-            Double totalHours = report.getTotalLaborHours() + report.getTotalMachineryHours();
-            if (totalHours > 0) {
-                Double laborRatio = (report.getTotalLaborHours() / totalHours) * 100;
-                Double machineryRatio = (report.getTotalMachineryHours() / totalHours) * 100;
-                
-                String balanceInsight = generateResourceBalanceInsight(laborRatio, machineryRatio);
-                if (!balanceInsight.isEmpty()) {
-                    Paragraph insight = new Paragraph("Resource Balance: " + balanceInsight)
-                            .setItalic()
-                            .setMarginTop(10)
-                            .setFontSize(10);
-                    document.add(insight);
-                }
-            }
-        }
-    }
 
     private void addMaterialsAnalysis(Document document, MonthlyReportDTO report) {
         document.add(new Paragraph("\n"));
@@ -530,7 +496,7 @@ public class PDFReportService {
 
         if (previousReportOpt.isPresent()) {
             com.example.buildsmart.model.MonthlyReport prevReport = previousReportOpt.get();
-            
+
             Table comparisonTable = new Table(3).useAllAvailableWidth();
             comparisonTable.addCell(createHeaderCell("Metric"));
             comparisonTable.addCell(createHeaderCell("Current Month"));
@@ -555,10 +521,7 @@ public class PDFReportService {
             comparisonTable.addCell(createDataCell(report.getWorkDays() != null ? report.getWorkDays().toString() : "N/A"));
             comparisonTable.addCell(createDataCell(prevReport.getWorkDays() != null ? prevReport.getWorkDays().toString() : "N/A"));
 
-            // Productivity comparison
-            comparisonTable.addCell(createLabelCell("Productivity Score:"));
-            comparisonTable.addCell(createDataCell(formatPercentage(report.getProductivityScore())));
-            comparisonTable.addCell(createDataCell(formatPercentage(prevReport.getProductivityScore())));
+
 
             document.add(comparisonTable);
 
@@ -600,8 +563,8 @@ public class PDFReportService {
 
         // Hours efficiency
         if (report.getWorkDays() != null && report.getWorkDays() > 0) {
-            Double totalHours = (report.getTotalLaborHours() != null ? report.getTotalLaborHours() : 0.0) + 
-                               (report.getTotalMachineryHours() != null ? report.getTotalMachineryHours() : 0.0);
+            Double totalHours = (report.getTotalLaborHours() != null ? report.getTotalLaborHours() : 0.0) +
+                    (report.getTotalMachineryHours() != null ? report.getTotalMachineryHours() : 0.0);
             Double hoursPerDay = totalHours / report.getWorkDays();
             efficiencyTable.addCell(createLabelCell("Hours per Work Day:"));
             efficiencyTable.addCell(createDataCell(String.format("%.2f hours", hoursPerDay)));
@@ -609,8 +572,8 @@ public class PDFReportService {
 
         // Cost per hour
         if (report.getTotalCost() != null) {
-            Double totalHours = (report.getTotalLaborHours() != null ? report.getTotalLaborHours() : 0.0) + 
-                               (report.getTotalMachineryHours() != null ? report.getTotalMachineryHours() : 0.0);
+            Double totalHours = (report.getTotalLaborHours() != null ? report.getTotalLaborHours() : 0.0) +
+                    (report.getTotalMachineryHours() != null ? report.getTotalMachineryHours() : 0.0);
             if (totalHours > 0) {
                 BigDecimal costPerHour = report.getTotalCost().divide(BigDecimal.valueOf(totalHours), 2, RoundingMode.HALF_UP);
                 efficiencyTable.addCell(createLabelCell("Cost per Hour:"));
@@ -618,18 +581,7 @@ public class PDFReportService {
             }
         }
 
-        // Resource utilization rate
-        if (report.getWorkDays() != null && report.getWorkDays() > 0) {
-            // Assuming 8 hours per day as standard
-            Double maxPossibleHours = report.getWorkDays() * 8.0;
-            Double actualHours = (report.getTotalLaborHours() != null ? report.getTotalLaborHours() : 0.0) + 
-                                (report.getTotalMachineryHours() != null ? report.getTotalMachineryHours() : 0.0);
-            if (maxPossibleHours > 0) {
-                Double utilizationRate = (actualHours / maxPossibleHours) * 100;
-                efficiencyTable.addCell(createLabelCell("Resource Utilization Rate:"));
-                efficiencyTable.addCell(createDataCell(formatPercentage(utilizationRate)));
-            }
-        }
+
 
         document.add(efficiencyTable);
     }
@@ -671,10 +623,10 @@ public class PDFReportService {
             if (allProjectReports.size() >= 2) {
                 com.example.buildsmart.model.MonthlyReport latest = allProjectReports.get(0);
                 com.example.buildsmart.model.MonthlyReport previous = allProjectReports.get(1);
-                
+
                 Paragraph timelineInsight = new Paragraph();
                 timelineInsight.add("Timeline Insights:\n");
-                
+
                 // Progress tracking
                 if (latest.getTotalCost() != null && previous.getTotalCost() != null) {
                     BigDecimal costGrowth = latest.getTotalCost().subtract(previous.getTotalCost());
@@ -686,7 +638,7 @@ public class PDFReportService {
                         timelineInsight.add("• Project costs remain stable\n");
                     }
                 }
-                
+
                 // Productivity trend
                 if (latest.getProductivityScore() != null && previous.getProductivityScore() != null) {
                     Double productivityChange = latest.getProductivityScore() - previous.getProductivityScore();
@@ -698,15 +650,15 @@ public class PDFReportService {
                         timelineInsight.add("• Productivity remains consistent\n");
                     }
                 }
-                
+
                 // Project status summary
                 long approvedReports = allProjectReports.stream()
                         .filter(r -> "APPROVED".equals(r.getStatus()))
                         .count();
                 long totalReports = allProjectReports.size();
-                
+
                 timelineInsight.add("• " + approvedReports + " out of " + totalReports + " reports have been approved\n");
-                
+
                 // Current month position in timeline
                 int currentPosition = 1;
                 for (int i = 0; i < allProjectReports.size(); i++) {
@@ -716,7 +668,7 @@ public class PDFReportService {
                     }
                 }
                 timelineInsight.add("• This is the " + getOrdinal(currentPosition) + " report in the project timeline\n");
-                
+
                 timelineInsight.setMarginTop(10).setFontSize(10);
                 document.add(timelineInsight);
             }
@@ -729,18 +681,18 @@ public class PDFReportService {
         // Project completion estimation
         if (report.getWorkDays() != null && report.getWorkDays() > 0) {
             // Simple estimation based on current productivity
-            Double totalHours = (report.getTotalLaborHours() != null ? report.getTotalLaborHours() : 0.0) + 
-                               (report.getTotalMachineryHours() != null ? report.getTotalMachineryHours() : 0.0);
+            Double totalHours = (report.getTotalLaborHours() != null ? report.getTotalLaborHours() : 0.0) +
+                    (report.getTotalMachineryHours() != null ? report.getTotalMachineryHours() : 0.0);
             Double avgHoursPerDay = totalHours / report.getWorkDays();
-            
+
             if (avgHoursPerDay > 0) {
                 // Assuming 8 hours per day as standard and estimating remaining work
                 Double efficiency = (avgHoursPerDay / 8.0) * 100;
-                
+
                 Paragraph estimation = new Paragraph();
                 estimation.add("Project Progress Estimation:\n");
                 estimation.add("• Current daily efficiency: " + String.format("%.1f", efficiency) + "% of standard 8-hour day\n");
-                
+
                 if (efficiency > 100) {
                     estimation.add("• Project is ahead of schedule with high daily output\n");
                 } else if (efficiency > 80) {
@@ -750,7 +702,7 @@ public class PDFReportService {
                 } else {
                     estimation.add("• Project requires immediate attention to improve daily output\n");
                 }
-                
+
                 estimation.setMarginTop(10).setFontSize(10);
                 document.add(estimation);
             }
@@ -759,40 +711,56 @@ public class PDFReportService {
 
     // Helper methods for insights generation
 
-    private String generateCostInsight(BigDecimal laborCost, BigDecimal machineryCost, BigDecimal totalCost) {
+    private String generateCostInsight(BigDecimal materialsCost, BigDecimal laborCost, BigDecimal machineryCost,
+                                       BigDecimal subcontractorsCost, BigDecimal otherCosts, BigDecimal totalCost) {
         if (totalCost.compareTo(BigDecimal.ZERO) == 0) return "";
-        
+
+        BigDecimal materialsRatio = materialsCost.divide(totalCost, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
         BigDecimal laborRatio = laborCost.divide(totalCost, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
         BigDecimal machineryRatio = machineryCost.divide(totalCost, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
-        
-        if (laborRatio.compareTo(BigDecimal.valueOf(70)) > 0) {
-            return "Labor-intensive project with " + String.format("%.1f", laborRatio.doubleValue()) + "% labor costs.";
-        } else if (machineryRatio.compareTo(BigDecimal.valueOf(70)) > 0) {
-            return "Machinery-intensive project with " + String.format("%.1f", machineryRatio.doubleValue()) + "% machinery costs.";
+        BigDecimal subcontractorsRatio = subcontractorsCost.divide(totalCost, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+        BigDecimal otherCostsRatio = otherCosts.divide(totalCost, 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
+
+        // Find the largest cost category
+        BigDecimal maxRatio = materialsRatio;
+        String dominantCategory = "Materials";
+
+        if (laborRatio.compareTo(maxRatio) > 0) {
+            maxRatio = laborRatio;
+            dominantCategory = "Labor";
+        }
+        if (machineryRatio.compareTo(maxRatio) > 0) {
+            maxRatio = machineryRatio;
+            dominantCategory = "Machinery";
+        }
+        if (subcontractorsRatio.compareTo(maxRatio) > 0) {
+            maxRatio = subcontractorsRatio;
+            dominantCategory = "Subcontractors";
+        }
+        if (otherCostsRatio.compareTo(maxRatio) > 0) {
+            maxRatio = otherCostsRatio;
+            dominantCategory = "Other costs";
+        }
+
+        if (maxRatio.compareTo(BigDecimal.valueOf(50)) > 0) {
+            return dominantCategory + "-intensive project with " + String.format("%.1f", maxRatio.doubleValue()) + "% of total costs.";
         } else {
-            return "Balanced resource allocation with " + String.format("%.1f", laborRatio.doubleValue()) + "% labor and " + 
-                   String.format("%.1f", machineryRatio.doubleValue()) + "% machinery costs.";
+            return "Balanced cost distribution across categories: Materials " + String.format("%.1f", materialsRatio.doubleValue()) +
+                    "%, Labor " + String.format("%.1f", laborRatio.doubleValue()) +
+                    "%, Machinery " + String.format("%.1f", machineryRatio.doubleValue()) + "%.";
         }
     }
 
-    private String generateResourceBalanceInsight(Double laborRatio, Double machineryRatio) {
-        if (Math.abs(laborRatio - machineryRatio) < 10) {
-            return "Well-balanced resource utilization between labor and machinery.";
-        } else if (laborRatio > machineryRatio) {
-            return "Labor-focused approach with " + String.format("%.1f", laborRatio) + "% labor utilization.";
-        } else {
-            return "Machinery-focused approach with " + String.format("%.1f", machineryRatio) + "% machinery utilization.";
-        }
-    }
+
 
     private String generateComparisonInsight(MonthlyReportDTO current, com.example.buildsmart.model.MonthlyReport previous) {
         StringBuilder insight = new StringBuilder();
-        
+
         // Cost comparison
         if (current.getTotalCost() != null && previous.getTotalCost() != null) {
             BigDecimal costChange = current.getTotalCost().subtract(previous.getTotalCost());
             BigDecimal costChangePercent = costChange.divide(previous.getTotalCost(), 4, RoundingMode.HALF_UP).multiply(BigDecimal.valueOf(100));
-            
+
             if (costChange.compareTo(BigDecimal.ZERO) > 0) {
                 insight.append("Cost increased by ").append(formatCurrency(costChange.abs())).append(" (").append(String.format("%.1f", costChangePercent.doubleValue())).append("%). ");
             } else if (costChange.compareTo(BigDecimal.ZERO) < 0) {
@@ -801,7 +769,7 @@ public class PDFReportService {
                 insight.append("Cost remained stable. ");
             }
         }
-        
+
         // Productivity comparison
         if (current.getProductivityScore() != null && previous.getProductivityScore() != null) {
             Double productivityChange = current.getProductivityScore() - previous.getProductivityScore();
@@ -813,7 +781,7 @@ public class PDFReportService {
                 insight.append("Productivity remained stable. ");
             }
         }
-        
+
         return insight.toString();
     }
 

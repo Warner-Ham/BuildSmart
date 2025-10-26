@@ -38,7 +38,7 @@ public class ProjectBudgetController {
     public ResponseEntity<ProjectBudget> updateBudget(@PathVariable Long bgt_id, @RequestBody ProjectBudget budget) {
         Optional<ProjectBudget> existingBudget = projectBudgetRepository.findById(bgt_id);
         if (existingBudget.isEmpty()) return ResponseEntity.notFound().build();
-        
+
         ProjectBudget existing = existingBudget.get();
         if (budget.getMachinery() != null) existing.setMachinery(budget.getMachinery());
         if (budget.getMaterials() != null) existing.setMaterials(budget.getMaterials());
@@ -48,7 +48,7 @@ public class ProjectBudgetController {
         if (budget.getOther_costs() != null) existing.setOther_costs(budget.getOther_costs());
         if (budget.getTotal_budget() != null) existing.setTotal_budget(budget.getTotal_budget());
         if (budget.getAllocated_date() != null) existing.setAllocated_date(budget.getAllocated_date());
-        
+
         ProjectBudget saved = projectBudgetRepository.save(existing);
         return ResponseEntity.ok(saved);
     }
@@ -113,11 +113,11 @@ public class ProjectBudgetController {
         ProjectBudget budget = budgets.get(budgets.size()-1);
         // Simple report: sum all costs and compare to total_budget
         double spent = (budget.getMachinery() != null ? budget.getMachinery() : 0)
-            + (budget.getMaterials() != null ? budget.getMaterials() : 0)
-            + (budget.getLabour_general() != null ? budget.getLabour_general() : 0)
-            + (budget.getLabour_skilled() != null ? budget.getLabour_skilled() : 0)
-            + (budget.getSubcontractors() != null ? budget.getSubcontractors() : 0)
-            + (budget.getOther_costs() != null ? budget.getOther_costs() : 0);
+                + (budget.getMaterials() != null ? budget.getMaterials() : 0)
+                + (budget.getLabour_general() != null ? budget.getLabour_general() : 0)
+                + (budget.getLabour_skilled() != null ? budget.getLabour_skilled() : 0)
+                + (budget.getSubcontractors() != null ? budget.getSubcontractors() : 0)
+                + (budget.getOther_costs() != null ? budget.getOther_costs() : 0);
         double total = budget.getTotal_budget() != null ? budget.getTotal_budget() : 0;
         return ResponseEntity.ok(new java.util.HashMap<String, Object>() {{
             put("project_id", id);

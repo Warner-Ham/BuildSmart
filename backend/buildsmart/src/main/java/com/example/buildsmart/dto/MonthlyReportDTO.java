@@ -1,8 +1,16 @@
 package com.example.buildsmart.dto;
 
-import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class MonthlyReportDTO {
 
@@ -29,6 +37,12 @@ public class MonthlyReportDTO {
 
     @DecimalMin(value = "0.0", message = "Total machinery cost must be non-negative")
     private BigDecimal totalMachineryCost;
+
+    @DecimalMin(value = "0.0", message = "Total subcontractors cost must be non-negative")
+    private BigDecimal totalSubcontractorsCost;
+
+    @DecimalMin(value = "0.0", message = "Total other costs must be non-negative")
+    private BigDecimal totalOtherCosts;
 
     @DecimalMin(value = "0.0", message = "Total cost must be non-negative")
     private BigDecimal totalCost;
@@ -132,6 +146,22 @@ public class MonthlyReportDTO {
 
     public void setTotalMachineryCost(BigDecimal totalMachineryCost) {
         this.totalMachineryCost = totalMachineryCost;
+    }
+
+    public BigDecimal getTotalSubcontractorsCost() {
+        return totalSubcontractorsCost;
+    }
+
+    public void setTotalSubcontractorsCost(BigDecimal totalSubcontractorsCost) {
+        this.totalSubcontractorsCost = totalSubcontractorsCost;
+    }
+
+    public BigDecimal getTotalOtherCosts() {
+        return totalOtherCosts;
+    }
+
+    public void setTotalOtherCosts(BigDecimal totalOtherCosts) {
+        this.totalOtherCosts = totalOtherCosts;
     }
 
     public BigDecimal getTotalCost() {

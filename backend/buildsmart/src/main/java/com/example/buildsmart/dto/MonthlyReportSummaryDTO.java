@@ -12,6 +12,7 @@ public class MonthlyReportSummaryDTO {
     private Integer reportYear;
     private Integer reportMonth;
     private BigDecimal totalCost;
+    private BigDecimal totalBudget;
     private BigDecimal budgetVariance;
     private String status;
     private Double productivityScore;
@@ -90,6 +91,14 @@ public class MonthlyReportSummaryDTO {
 
     public void setTotalCost(BigDecimal totalCost) {
         this.totalCost = totalCost;
+    }
+
+    public BigDecimal getTotalBudget() {
+        return totalBudget;
+    }
+
+    public void setTotalBudget(BigDecimal totalBudget) {
+        this.totalBudget = totalBudget;
     }
 
     public BigDecimal getBudgetVariance() {

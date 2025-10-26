@@ -1,22 +1,26 @@
 package com.example.buildsmart.service;
 
-import com.example.buildsmart.dto.MonthlyReportDTO;
-import com.example.buildsmart.dto.MonthlyReportSummaryDTO;
-import com.example.buildsmart.model.MonthlyReport;
-import com.example.buildsmart.model.Project;
-import com.example.buildsmart.model.DailyLog;
-import com.example.buildsmart.repository.MonthlyReportRepository;
-import com.example.buildsmart.repository.ProjectRepository;
-import com.example.buildsmart.repository.DailyLogRepository;
-import com.example.buildsmart.exeption.MonthlyReportException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.buildsmart.dto.MonthlyReportDTO;
+import com.example.buildsmart.dto.MonthlyReportSummaryDTO;
+import com.example.buildsmart.exeption.MonthlyReportException;
+import com.example.buildsmart.model.DailyLog;
+import com.example.buildsmart.model.MonthlyReport;
+import com.example.buildsmart.model.Project;
+import com.example.buildsmart.repository.DailyLogRepository;
+import com.example.buildsmart.repository.MonthlyReportRepository;
+import com.example.buildsmart.repository.ProjectBudgetRepository;
+import com.example.buildsmart.repository.ProjectRepository;
 
 @Service
 @Transactional
@@ -30,6 +34,9 @@ public class MonthlyReportService {
 
     @Autowired
     private DailyLogRepository dailyLogRepository;
+
+    @Autowired
+    private ProjectBudgetRepository projectBudgetRepository;
 
     // Create a new monthly report
     public MonthlyReportDTO createMonthlyReport(MonthlyReportDTO reportDTO, String createdBy) {
@@ -58,6 +65,8 @@ public class MonthlyReportService {
         monthlyReport.setTotalMaterialsCost(reportDTO.getTotalMaterialsCost());
         monthlyReport.setTotalLaborCost(reportDTO.getTotalLaborCost());
         monthlyReport.setTotalMachineryCost(reportDTO.getTotalMachineryCost());
+        monthlyReport.setTotalSubcontractorsCost(reportDTO.getTotalSubcontractorsCost());
+        monthlyReport.setTotalOtherCosts(reportDTO.getTotalOtherCosts());
         monthlyReport.setTotalLaborHours(reportDTO.getTotalLaborHours());
         monthlyReport.setTotalMachineryHours(reportDTO.getTotalMachineryHours());
         monthlyReport.setWorkDays(reportDTO.getWorkDays());
@@ -106,16 +115,16 @@ public class MonthlyReportService {
         LocalDate endDate = startDate.withDayOfMonth(startDate.lengthOfMonth());
 
         System.out.println("DEBUG: Looking for daily logs for project " + projectId + " between " + startDate + " and " + endDate);
-        
+
         List<DailyLog> dailyLogs = dailyLogRepository.findByProjectIdAndLogDateBetween(projectId, startDate, endDate);
-        
+
         System.out.println("DEBUG: Found " + dailyLogs.size() + " daily logs");
 
         if (dailyLogs.isEmpty()) {
             // Let's also check if there are any daily logs for this project at all
             List<DailyLog> allProjectLogs = dailyLogRepository.findByProjectId(projectId);
             System.out.println("DEBUG: Total daily logs for project " + projectId + ": " + allProjectLogs.size());
-            
+
             if (allProjectLogs.isEmpty()) {
                 throw new MonthlyReportException("No daily logs found for this project. Please create daily logs before generating monthly reports.");
             } else {
@@ -123,36 +132,52 @@ public class MonthlyReportService {
             }
         }
 
-        // Calculate totals from daily logs
-        BigDecimal totalMaterialsCost = BigDecimal.ZERO;
-        BigDecimal totalLaborCost = BigDecimal.ZERO;
-        BigDecimal totalMachineryCost = BigDecimal.ZERO;
+        // Calculate totals from daily logs for labor and machinery hours
         Double totalLaborHours = 0.0;
         Double totalMachineryHours = 0.0;
         int workDays = dailyLogs.size();
-        
 
-        // Calculate costs from daily logs with default rates
-        // Note: In a real implementation, you would need to calculate costs based on actual rates
-        // For now, we'll use placeholder calculations that work without budget requirements
-        System.out.println("DEBUG: Processing " + dailyLogs.size() + " daily logs for cost calculation");
-        
+        System.out.println("DEBUG: Processing " + dailyLogs.size() + " daily logs for hours calculation");
+
         for (DailyLog log : dailyLogs) {
             System.out.println("DEBUG: Processing log - Labor: " + log.getLaborHours() + ", Machinery: " + log.getMachineryHours());
-            
+
             if (log.getLaborHours() != null && log.getLaborHours() > 0) {
                 totalLaborHours += log.getLaborHours();
-                // Using default labor rate of $25/hour (can be configured later)
-                totalLaborCost = totalLaborCost.add(BigDecimal.valueOf(log.getLaborHours() * 25.0));
             }
             if (log.getMachineryHours() != null && log.getMachineryHours() > 0) {
                 totalMachineryHours += log.getMachineryHours();
-                // Using default machinery rate of $50/hour (can be configured later)
-                totalMachineryCost = totalMachineryCost.add(BigDecimal.valueOf(log.getMachineryHours() * 50.0));
             }
         }
-        
-        System.out.println("DEBUG: Calculated totals - Labor: $" + totalLaborCost + " (" + totalLaborHours + "h), Machinery: $" + totalMachineryCost + " (" + totalMachineryHours + "h)");
+
+        // Calculate actual costs from project_budgets table for the specified month
+        Date monthStartDate = java.sql.Date.valueOf(startDate);
+        Date monthEndDate = java.sql.Date.valueOf(endDate);
+
+        System.out.println("DEBUG: Calculating actual costs from project budgets for period " + monthStartDate + " to " + monthEndDate);
+
+        // Get actual costs from project_budgets table
+        Double materialsCostDouble = projectBudgetRepository.sumMaterialsCostsByProjectAndDateRange(projectId, monthStartDate, monthEndDate);
+        Double machineryCostDouble = projectBudgetRepository.sumMachineryCostsByProjectAndDateRange(projectId, monthStartDate, monthEndDate);
+        Double laborGeneralCostDouble = projectBudgetRepository.sumLaborGeneralCostsByProjectAndDateRange(projectId, monthStartDate, monthEndDate);
+        Double laborSkilledCostDouble = projectBudgetRepository.sumLaborSkilledCostsByProjectAndDateRange(projectId, monthStartDate, monthEndDate);
+        Double subcontractorsCostDouble = projectBudgetRepository.sumSubcontractorsCostsByProjectAndDateRange(projectId, monthStartDate, monthEndDate);
+        Double otherCostsCostDouble = projectBudgetRepository.sumOtherCostsByProjectAndDateRange(projectId, monthStartDate, monthEndDate);
+
+        // Convert to BigDecimal with null safety
+        BigDecimal totalMaterialsCost = BigDecimal.valueOf(materialsCostDouble != null ? materialsCostDouble : 0.0);
+        BigDecimal totalMachineryCost = BigDecimal.valueOf(machineryCostDouble != null ? machineryCostDouble : 0.0);
+        BigDecimal totalLaborCost = BigDecimal.valueOf((laborGeneralCostDouble != null ? laborGeneralCostDouble : 0.0) +
+                (laborSkilledCostDouble != null ? laborSkilledCostDouble : 0.0));
+        BigDecimal totalSubcontractorsCost = BigDecimal.valueOf(subcontractorsCostDouble != null ? subcontractorsCostDouble : 0.0);
+        BigDecimal totalOtherCosts = BigDecimal.valueOf(otherCostsCostDouble != null ? otherCostsCostDouble : 0.0);
+
+        System.out.println("DEBUG: Calculated actual costs - Materials: $" + totalMaterialsCost +
+                ", Machinery: $" + totalMachineryCost +
+                ", Labor: $" + totalLaborCost + " (" + totalLaborHours + "h)" +
+                ", Subcontractors: $" + totalSubcontractorsCost +
+                ", Other: $" + totalOtherCosts +
+                ", Total machinery hours: " + totalMachineryHours + "h");
 
         MonthlyReport monthlyReport;
         if (isOverwrite && existingReportEntity != null) {
@@ -161,15 +186,17 @@ public class MonthlyReportService {
             monthlyReport.setTotalMaterialsCost(totalMaterialsCost);
             monthlyReport.setTotalLaborCost(totalLaborCost);
             monthlyReport.setTotalMachineryCost(totalMachineryCost);
+            monthlyReport.setTotalSubcontractorsCost(totalSubcontractorsCost);
+            monthlyReport.setTotalOtherCosts(totalOtherCosts);
             monthlyReport.setTotalLaborHours(totalLaborHours);
             monthlyReport.setTotalMachineryHours(totalMachineryHours);
             monthlyReport.setWorkDays(workDays);
-            
+
             // Reset status to DRAFT when overwriting
             monthlyReport.setStatus("DRAFT");
             monthlyReport.setApprovedBy(null);
             monthlyReport.setApprovedAt(null);
-            
+
             // Update timestamp
             monthlyReport.updateTimestamp(createdBy);
         } else {
@@ -178,10 +205,12 @@ public class MonthlyReportService {
             monthlyReport.setTotalMaterialsCost(totalMaterialsCost);
             monthlyReport.setTotalLaborCost(totalLaborCost);
             monthlyReport.setTotalMachineryCost(totalMachineryCost);
+            monthlyReport.setTotalSubcontractorsCost(totalSubcontractorsCost);
+            monthlyReport.setTotalOtherCosts(totalOtherCosts);
             monthlyReport.setTotalLaborHours(totalLaborHours);
             monthlyReport.setTotalMachineryHours(totalMachineryHours);
             monthlyReport.setWorkDays(workDays);
-            
+
             // Set initial status to DRAFT
             monthlyReport.setStatus("DRAFT");
         }
@@ -191,13 +220,13 @@ public class MonthlyReportService {
             double avgDailyHours = (totalLaborHours + totalMachineryHours) / workDays;
             monthlyReport.setProductivityScore(Math.min(100.0, avgDailyHours * 10)); // Simplified calculation
         }
-        
+
         // Set budget variance to 0 (no budget tracking required)
         monthlyReport.setBudgetVariance(BigDecimal.ZERO);
-        
+
         // Add notes about the generation
-        String baseNotes = "Auto-generated from daily logs. Contains " + workDays + " work days with " + 
-                          totalLaborHours + " labor hours and " + totalMachineryHours + " machinery hours.";
+        String baseNotes = "Auto-generated from daily logs. Contains " + workDays + " work days with " +
+                totalLaborHours + " labor hours and " + totalMachineryHours + " machinery hours.";
         if (isOverwrite) {
             monthlyReport.setNotes(baseNotes + " [OVERWRITTEN - Previous report was replaced]");
         } else {
@@ -205,13 +234,13 @@ public class MonthlyReportService {
         }
 
         monthlyReport.calculateTotals();
-        
+
         System.out.println("DEBUG: About to save monthly report with total cost: $" + monthlyReport.getTotalCost());
 
         MonthlyReport savedReport = monthlyReportRepository.save(monthlyReport);
-        
+
         System.out.println("DEBUG: Successfully saved monthly report with ID: " + savedReport.getId());
-        
+
         MonthlyReportDTO result = convertToDTO(savedReport);
         return result;
     }
@@ -228,7 +257,7 @@ public class MonthlyReportService {
     // Get monthly reports based on user role
     public List<MonthlyReportSummaryDTO> getMonthlyReportsByRole(String userRole) {
         List<MonthlyReport> reports;
-        
+
         switch (userRole) {
             case "Document Control Manager":
                 // DCM can see all reports (draft, submitted, approved, rejected)
@@ -247,7 +276,7 @@ public class MonthlyReportService {
                 reports = monthlyReportRepository.findByStatusOrderByCreatedAtDesc("APPROVED");
                 break;
         }
-        
+
         return reports.stream()
                 .map(this::convertToSummaryDTO)
                 .collect(Collectors.toList());
@@ -299,6 +328,8 @@ public class MonthlyReportService {
         report.setTotalMaterialsCost(reportDTO.getTotalMaterialsCost());
         report.setTotalLaborCost(reportDTO.getTotalLaborCost());
         report.setTotalMachineryCost(reportDTO.getTotalMachineryCost());
+        report.setTotalSubcontractorsCost(reportDTO.getTotalSubcontractorsCost());
+        report.setTotalOtherCosts(reportDTO.getTotalOtherCosts());
         report.setTotalLaborHours(reportDTO.getTotalLaborHours());
         report.setTotalMachineryHours(reportDTO.getTotalMachineryHours());
         report.setWorkDays(reportDTO.getWorkDays());
@@ -406,6 +437,8 @@ public class MonthlyReportService {
         dto.setTotalMaterialsCost(report.getTotalMaterialsCost());
         dto.setTotalLaborCost(report.getTotalLaborCost());
         dto.setTotalMachineryCost(report.getTotalMachineryCost());
+        dto.setTotalSubcontractorsCost(report.getTotalSubcontractorsCost());
+        dto.setTotalOtherCosts(report.getTotalOtherCosts());
         dto.setTotalCost(report.getTotalCost());
         dto.setTotalLaborHours(report.getTotalLaborHours());
         dto.setTotalMachineryHours(report.getTotalMachineryHours());

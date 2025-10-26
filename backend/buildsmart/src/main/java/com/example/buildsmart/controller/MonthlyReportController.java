@@ -74,17 +74,17 @@ public class MonthlyReportController {
         try {
             MonthlyReportDTO generatedReport = monthlyReportService.generateMonthlyReportFromDailyLogs(
                     projectId, year, month, userId, overwrite);
-            
+
             // Check if this was an overwrite operation
-            boolean wasOverwrite = generatedReport.getNotes() != null && 
-                                 generatedReport.getNotes().contains("[OVERWRITTEN");
-            
+            boolean wasOverwrite = generatedReport.getNotes() != null &&
+                    generatedReport.getNotes().contains("[OVERWRITTEN");
+
             Map<String, Object> response = Map.of(
-                "report", generatedReport,
-                "overwritten", wasOverwrite,
-                "message", wasOverwrite ? "Monthly report overwritten successfully!" : "Monthly report generated successfully!"
+                    "report", generatedReport,
+                    "overwritten", wasOverwrite,
+                    "message", wasOverwrite ? "Monthly report overwritten successfully!" : "Monthly report generated successfully!"
             );
-            
+
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (MonthlyReportException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -309,12 +309,12 @@ public class MonthlyReportController {
             }
 
             byte[] pdfBytes = pdfReportService.generateMonthlyReportPDF(report);
-            
+
             // Generate filename
-            String filename = String.format("MonthlyReport_%s_%d_%02d.pdf", 
-                report.getProjectName() != null ? report.getProjectName().replaceAll("[^a-zA-Z0-9]", "_") : "Project",
-                report.getReportYear(),
-                report.getReportMonth());
+            String filename = String.format("MonthlyReport_%s_%d_%02d.pdf",
+                    report.getProjectName() != null ? report.getProjectName().replaceAll("[^a-zA-Z0-9]", "_") : "Project",
+                    report.getReportYear(),
+                    report.getReportMonth());
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_PDF);

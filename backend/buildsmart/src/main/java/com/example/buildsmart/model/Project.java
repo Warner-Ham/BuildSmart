@@ -23,6 +23,12 @@ public class Project {
     private java.sql.Date end_date;
     private Double curr_budget;
     private Double pre_budget;
+    private String description;
+    private String projectType;
+    private String assignedStaff;
+    private String priority;
+    private String notes;
+    private java.sql.Date budget_date;
 
     // Getters and setters
     public Long getId() { return id; }
@@ -45,4 +51,16 @@ public class Project {
     public void setCurr_budget(Double curr_budget) { this.curr_budget = curr_budget; }
     public Double getPre_budget() { return pre_budget; }
     public void setPre_budget(Double pre_budget) { this.pre_budget = pre_budget; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public String getProjectType() { return projectType; }
+    public void setProjectType(String projectType) { this.projectType = projectType; }
+    public String getAssignedStaff() { return assignedStaff; }
+    public void setAssignedStaff(String assignedStaff) { this.assignedStaff = assignedStaff; }
+    public String getPriority() { return priority; }
+    public void setPriority(String priority) { this.priority = priority; }
+    public String getNotes() { return notes; }
+    public void setNotes(String notes) { this.notes = notes; }
+    public java.sql.Date getBudget_date() { return budget_date; }
+    public void setBudget_date(java.sql.Date budget_date) { this.budget_date = budget_date; }
 }
